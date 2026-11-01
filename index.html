@@ -80,7 +80,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 #settings .toggle-row{background:none; border:0; padding:0}
 .set-row{display:flex; flex-direction:column; gap:8px}
 .set-row > span small{display:block; color:var(--muted); font-size:13px}
-#clear-row{flex-direction:row; align-items:center; justify-content:space-between}
+#clear-row,.clear-row2{flex-direction:row; align-items:center; justify-content:space-between}
 .four .card.s0, .four .mc.s0{color:#1c7a3c}
 .four .card.s1, .four .mc.s1{color:#1f5fc4}
 .switch{width:46px; height:26px; border-radius:20px; background:#3a423b; position:relative; flex:none; transition:background .15s}
@@ -88,6 +88,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .switch[aria-checked="true"]{background:var(--ok)}
 .switch[aria-checked="true"]::after{transform:translateX(20px)}
 .fineprint{color:var(--muted); font-size:13px}
+#login{justify-content:center; align-items:center; gap:24px; text-align:center; padding-block:24px}
+.login-form{display:flex; flex-direction:column; gap:12px; width:min(300px,100%); text-align:left}
+.field{display:flex; flex-direction:column; gap:6px}
+.field input{min-height:48px; border-radius:12px; border:1px solid var(--line); background:var(--panel); color:var(--cream); font:inherit; font-size:16px; padding:0 14px}
+.field input::placeholder{color:#6f7d70}
+.field input:focus{outline:2px solid var(--brass); outline-offset:1px}
+.login-form .fineprint{text-align:center; margin:0}
+.linkish{color:var(--brass); text-decoration:underline; font-size:13px; padding:0}
 
 /* ---------- Setup ---------- */
 #setup{padding-block:18px; gap:14px; overflow-y:auto}
@@ -110,7 +118,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 /* ---------- Game ---------- */
 #game{padding-block:8px 10px; gap:8px}
 .scorebar{display:flex; align-items:center; gap:8px}
+.autopass{flex:none; display:flex; align-items:center; gap:6px; min-height:44px; padding:0 9px; border-radius:12px; background:var(--panel); border:1px solid var(--line); cursor:pointer; font-family:var(--cond); font-weight:600; font-size:11px; letter-spacing:.08em; text-transform:uppercase; line-height:1.05; color:var(--muted)}
+.autopass input{width:18px; height:18px; margin:0; accent-color:var(--brass)}
+.autopass.on{border-color:var(--brass); color:var(--brass)}
 .chips{flex:1; display:flex; gap:6px; overflow:hidden; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:5px; min-height:44px; text-align:left}
+.scorebar{position:relative}
+#game{position:relative}
+.score-btn{flex:1; display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; border-radius:12px; background:var(--panel); border:1px solid var(--line); font-family:var(--cond); font-weight:700; font-size:16px; letter-spacing:.1em; text-transform:uppercase; color:var(--cream)}
+.score-btn .chev{color:var(--brass); font-size:13px}
+.score-btn[aria-expanded="true"]{border-color:var(--brass)}
+.sb-ico{width:14px; height:12px; background:linear-gradient(var(--brass),var(--brass)) 0 100%/3px 6px no-repeat, linear-gradient(var(--brass),var(--brass)) 5px 100%/3px 12px no-repeat, linear-gradient(var(--brass),var(--brass)) 10px 100%/3px 9px no-repeat}
+.score-pop{position:absolute; z-index:45; top:54px; left:0; right:0; margin:0 auto; width:min(360px,100%); background:var(--panel); border:1px solid var(--brass); border-radius:14px; padding:12px 14px 10px; box-shadow:0 16px 36px rgba(0,0,0,.6); display:flex; flex-direction:column; gap:8px; animation:fadein .15s both}
+.sp-head{display:flex; justify-content:space-between; align-items:center}
+.sp-x{width:34px; height:34px; border-radius:9px; display:grid; place-items:center; font-size:16px; color:var(--muted); margin:-6px -6px 0 0}
+.sp-rows{display:flex; flex-direction:column}
+.sp-row{display:flex; align-items:center; gap:10px; padding:8px 2px; border-top:1px solid var(--line)}
+.sp-row:first-child{border-top:0}
+.sp-row .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sp-row b{font-family:var(--cond); font-size:20px; font-variant-numeric:tabular-nums}
+.sp-more{align-self:flex-start; min-height:36px; font-size:14px; color:var(--brass)}
 .chip{flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; padding:2px 6px; border-radius:8px}
 .chip b{font-family:var(--cond); font-size:17px; font-variant-numeric:tabular-nums; line-height:1.05}
 .chip span{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px}
@@ -121,25 +147,40 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .table::before{content:""; position:absolute; inset:22px; border-radius:90px; border:1.5px solid var(--felt-line); pointer-events:none}
 .table::after{content:""; position:absolute; inset:0; border-radius:100px; pointer-events:none; opacity:.18; background:repeating-radial-gradient(circle at 30% 20%, rgba(0,0,0,.25) 0 1px, transparent 1px 3px)}
 
-.seat{position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; gap:4px; width:90px}
-.seat.top{top:8px; left:50%; transform:translateX(-50%)}
-.seat.left{left:-4px; top:34%}
-.seat.right{right:-4px; top:34%}
+.seat{position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center; gap:4px; width:96px}
+.seat.top{top:2px; left:50%; transform:translateX(-50%)}
+.seat.left{left:-6px; top:30%; align-items:flex-start}
+.seat.left .nameplate{text-align:left}
+.seat.right{right:-6px; top:30%; align-items:flex-end}
+.seat.right .nameplate{text-align:right}
+.seat.right .avatar .mini{right:auto; left:-18px}
 .avatar{position:relative; width:51px; height:51px; border-radius:50%; display:grid; place-items:center; font-family:var(--display); font-size:24px; color:#14100a; box-shadow:0 0 0 3px var(--panel), 0 4px 10px rgba(0,0,0,.45); transition:box-shadow .2s}
-.seat.turn .avatar{box-shadow:0 0 0 3px var(--brass), 0 0 18px 4px rgba(217,178,99,.55)}
-.seat.turn .nameplate{border-color:var(--brass); box-shadow:0 0 0 1px var(--brass)}
-.seat.ontop .avatar{box-shadow:0 0 0 3px var(--ok), 0 0 14px 2px rgba(90,208,138,.45)}
-.seat.ontop .nameplate{border-color:var(--ok); box-shadow:0 0 0 1px var(--ok)}
+.seat .avatar,.seat .nameplate{--glow:transparent}
+/* whose turn it is: pulsing green */
+.seat.turn{--g:90,208,138}
+/* last play on the table: pulsing yellow */
+.seat.ontop{--g:232,194,90}
+/* went out: pulsing red */
+.seat.out{--g:239,75,75}
+.seat.turn .avatar,.seat.out .avatar{animation:seatpulse 1.6s ease-in-out infinite}
+.seat.turn .nameplate,.seat.ontop .nameplate,.seat.out .nameplate{border-width:2px; border-color:rgb(var(--g))}
+.seat.turn .nameplate,.seat.out .nameplate{animation:platepulse 1.6s ease-in-out infinite}
+.seat.ontop .avatar{box-shadow:0 0 0 4px rgb(var(--g)), 0 0 0 6px rgba(8,12,9,.85), 0 0 20px 7px rgba(var(--g),.7)}
+.seat.ontop .nameplate{box-shadow:0 0 0 1px rgb(var(--g)), 0 0 12px rgba(var(--g),.6)}
+.seat.ontop .nameplate{background:rgba(60,48,16,.92)}
+.seat.turn .nameplate{background:rgba(18,64,40,.92)}
+.seat.out .nameplate{background:rgba(70,18,18,.92)}
+@keyframes seatpulse{0%,100%{box-shadow:0 0 0 4px rgb(var(--g)), 0 0 0 6px rgba(8,12,9,.85), 0 0 16px 5px rgba(var(--g),.55)}50%{box-shadow:0 0 0 4px rgb(var(--g)), 0 0 0 6px rgba(8,12,9,.85), 0 0 30px 12px rgba(var(--g),.95)}}
+@keyframes platepulse{0%,100%{box-shadow:0 0 0 1px rgb(var(--g)), 0 0 8px rgba(var(--g),.45)}50%{box-shadow:0 0 0 1px rgb(var(--g)), 0 0 16px rgba(var(--g),.85)}}
 .seat.passed .avatar{box-shadow:0 0 0 3px var(--cream)}
 .seat.passed .nameplate{border-color:var(--cream); box-shadow:0 0 0 1px var(--cream)}
-.seat.passed .nameplate span{color:var(--cream)}
-.seat.turn .nameplate span{color:var(--brass)}
-.seat .mini{position:absolute; right:-18px; bottom:-8px; width:28px; height:39px; border-width:2px; border-radius:5px}
+.seat .mini{position:absolute; z-index:1; right:-18px; bottom:-8px; width:28px; height:39px; border-width:2px; border-radius:5px}
 .seat .mini.last{box-shadow:0 0 0 2.5px var(--danger), 0 0 10px var(--danger)}
 .seat .mini.gone{opacity:0}
-.nameplate{background:rgba(8,12,9,.82); border:1px solid var(--line); transition:border-color .2s, box-shadow .2s; border-radius:8px; padding:3px 7px; text-align:center; line-height:1.15}
-.nameplate b{display:block; font-size:13px}
-.nameplate span{font-family:var(--cond); font-size:11px; letter-spacing:.08em; color:var(--muted)}
+.nameplate{background:rgba(8,12,9,.82); border:1px solid var(--line); transition:border-color .2s, box-shadow .2s; border-radius:7px; padding:2px 6px; text-align:center; line-height:1.1}
+.nameplate b{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:11px; font-weight:600; line-height:1.15; max-width:80px}
+.pass-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:5; font-family:var(--cond); font-weight:700; font-size:22px; letter-spacing:.08em; color:rgba(255,255,255,.92); background:rgba(10,14,11,.55); border:2px solid rgba(255,255,255,.75); border-radius:7px; padding:0 7px; line-height:1.25; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.6); animation:stamp .18s ease-out both}
+@keyframes stamp{from{transform:translate(-50%,-50%) rotate(-14deg) scale(1.5); opacity:0}}
 .bubble{position:absolute; top:-6px; left:50%; transform:translate(-50%,-100%); background:var(--cream); color:#1b1b1b; font-family:var(--cond); font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:6px; white-space:nowrap}
 .seat.top .bubble{top:auto; bottom:-8px; transform:translate(-50%,100%)}
 .bubble.think{background:var(--brass)}
@@ -156,9 +197,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .banner{position:absolute; left:50%; top:24%; transform:translateX(-50%); z-index:3; background:rgba(8,12,9,.88); border:1px solid var(--brass); color:var(--cream); padding:6px 14px; border-radius:20px; font-family:var(--cond); font-weight:600; letter-spacing:.05em; font-size:14px; white-space:nowrap; animation:fadein .2s both}
 .setaside{position:absolute; left:24px; bottom:68px; display:flex; align-items:center; gap:6px; opacity:.75}
 .setaside .back{position:relative; width:18px; height:25px; border-width:2px; border-radius:3px}
-.rankline{position:absolute; left:50%; bottom:26px; transform:translateX(-50%); z-index:2; display:flex; align-items:center; gap:7px; padding:5px 12px; border-radius:16px; background:rgba(6,30,19,.6); border:1px solid var(--felt-line); white-space:nowrap}
-.rankline b{font-family:var(--display); font-weight:400; font-size:17px; color:var(--cream)}
-.rankline span:last-child{font-size:12px; color:#cfe2cf}
+.rankline{position:absolute; left:50%; bottom:30px; transform:translateX(-50%); z-index:2; display:flex; align-items:center; gap:10px; white-space:nowrap; pointer-events:none}
+.rankline::before,.rankline::after{content:""; width:22px; height:1px; background:linear-gradient(90deg,transparent,rgba(217,178,99,.7))}
+.rankline::after{transform:scaleX(-1)}
+.rankline b{font-family:var(--cond); font-weight:600; font-size:13px; letter-spacing:.18em; text-transform:uppercase; color:var(--brass); text-shadow:0 1px 0 rgba(0,0,0,.45); opacity:.92}
 .setaside span{font-family:var(--cond); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:rgba(242,233,212,.7)}
 @keyframes land{from{transform:translateY(-14px) scale(1.06); opacity:0}}
 @keyframes fadein{from{opacity:0}}
@@ -167,17 +209,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .status{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:30px}
 .status p{margin:0; font-size:14px; line-height:1.25; min-width:0}
 .status p b{color:var(--brass)}
-.me-tag{display:flex; align-items:center; gap:6px; font-family:var(--cond); font-size:13px; letter-spacing:.06em; color:var(--muted); white-space:nowrap; padding:4px 10px; border-radius:14px; border:1.5px solid var(--line)}
-.me-tag.turn{color:var(--brass); border-color:var(--brass); box-shadow:0 0 10px rgba(217,178,99,.45)}
-.me-tag.ontop{color:var(--ok); border-color:var(--ok)}
-.me-tag.passed{color:var(--cream); border-color:var(--cream)}
 .hand{position:relative; height:132px; touch-action:none}
 .hand .card{top:22px; transition:top .14s ease, left .18s ease, box-shadow .14s}
 .hand .card.sel{top:0; box-shadow:0 0 0 2px var(--brass), 0 8px 16px rgba(0,0,0,.45)}
 .card.opening{box-shadow:0 0 0 3px var(--danger), 0 0 14px var(--danger)!important; animation:none}
 .hand .card.last{box-shadow:0 0 0 3px var(--danger), 0 0 14px var(--danger)}
 .hand .card.dragging{transition:none; z-index:50; box-shadow:0 12px 24px rgba(0,0,0,.6)}
-.controls{display:grid; grid-template-columns:auto auto 1fr 1fr; gap:8px; align-items:stretch}
+.controls{display:grid; grid-template-columns:auto auto 1fr 1fr; gap:8px; align-items:stretch; border-radius:16px; padding:4px; margin:-4px; transition:box-shadow .3s}
+.controls.myturn{animation:myturn 1.8s ease-in-out infinite}
+@keyframes myturn{0%,100%{box-shadow:0 0 0 1px rgba(90,208,138,.35), 0 0 10px 2px rgba(90,208,138,.18)}50%{box-shadow:0 0 0 1.5px rgba(90,208,138,.75), 0 0 22px 6px rgba(90,208,138,.38)}}
 .ctl{min-height:50px; border-radius:12px; background:var(--panel-2); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 10px; line-height:1.1}
 .ctl small{font-family:var(--cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
 .ctl b{font-family:var(--cond); font-size:17px; font-variant-numeric:tabular-nums}
@@ -227,6 +267,99 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .vote b{font-family:var(--cond); font-size:16px; font-variant-numeric:tabular-nums; color:var(--brass)}
 .fair{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px}
 .fair code{font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--cream); background:#0b0f0c; padding:2px 6px; border-radius:5px}
+.profile-row{display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background:var(--panel); border:1px solid var(--line); text-align:left}
+.profile-row .pr-txt{flex:1; min-width:0}
+.profile-row .pr-txt b{display:block; font-size:16px}
+.profile-row .pr-txt small{color:var(--muted); font-size:13px}
+.profile-row .chev{font-size:24px; color:var(--brass)}
+.av{display:inline-grid; place-items:center; border-radius:50%; flex:none; font-family:var(--display); color:#14100a; line-height:1; overflow:hidden}
+#profile{padding-block:18px; gap:14px; overflow-y:auto}
+.pf-card{display:flex; flex-direction:column; align-items:center; gap:12px; padding:18px 14px; border-radius:14px; background:var(--panel); border:1px solid var(--line)}
+.pf-name-row{display:flex; align-items:center; gap:8px}
+.pf-name-row b{font-family:var(--display); font-weight:400; font-size:26px}
+.pencil{width:30px; height:30px; display:grid; place-items:center; border-radius:8px; color:var(--brass)}
+.pf-name-edit{display:flex; flex-direction:column; gap:10px; width:min(300px,100%)}
+.pf-name-edit input{min-height:46px; border-radius:12px; border:1px solid var(--brass); background:var(--room); color:var(--cream); font:inherit; font-size:17px; padding:0 14px; text-align:center}
+.pf-name-edit .row{display:flex; gap:10px}
+.pf-name-edit .row .btn{flex:1; min-height:44px; font-size:16px}
+.pf-pane{display:flex; flex-direction:column; gap:14px}
+.st-rows{display:flex; flex-direction:column}
+.st-row{display:grid; grid-template-columns:96px 1fr auto; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line)}
+.st-row:first-child{border-top:0}
+.st-row .fmt{font-weight:600}
+.st-row .fmt small{display:block; font-weight:400; font-size:12px; color:var(--muted)}
+.st-bar{height:8px; border-radius:5px; background:var(--panel-2); overflow:hidden}
+.st-bar i{display:block; height:100%; border-radius:5px; background:linear-gradient(90deg,var(--brass-deep),var(--brass))}
+.st-pct{font-family:var(--cond); font-size:22px; font-variant-numeric:tabular-nums; min-width:58px; text-align:right}
+.st-pct.none{color:var(--muted); font-size:16px}
+.st-row.total{border-top:1px solid var(--brass); margin-top:2px}
+.st-empty{margin:0; padding:6px 0; color:var(--muted); font-size:14px}
+.swatches{display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:10px}
+.swatch{aspect-ratio:1; max-width:100%; border-radius:50%; border:2px solid transparent; display:grid; place-items:center; font-size:24px; background:var(--panel-2)}
+.swatch[aria-pressed="true"]{border-color:var(--brass); box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--brass)}
+.swatch.none{font-family:var(--display); font-size:20px; color:var(--cream)}
+.swatches.locked{opacity:.4; pointer-events:none}
+.lobby-tools{display:flex; flex-direction:column; gap:10px}
+.lb-top{display:flex; gap:10px; align-items:center}
+.lb-top .seg{flex:1}
+.lobby-tools-row{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px}
+.lobby-tools-row .dir-btn{justify-self:end; padding-right:14px}
+.priv-btn{display:flex; align-items:center; gap:7px; min-height:40px; padding:0 16px; border-radius:10px; border:1px solid var(--brass); color:var(--brass); font-family:var(--cond); font-weight:700; font-size:15px; letter-spacing:.08em; text-transform:uppercase}
+.lock{position:relative; width:11px; height:9px; margin-top:4px; border-radius:2px; background:currentColor}
+.lock::before{content:""; position:absolute; left:2px; top:-6px; width:7px; height:7px; border:2px solid currentColor; border-bottom:0; border-radius:5px 5px 0 0; box-sizing:border-box}
+.priv-fields{display:flex; flex-direction:column; gap:10px}
+.form-err{margin:0; color:#ff9a9a; font-size:14px}
+.sort-wrap{position:relative}
+.sort-btn{display:flex; align-items:center; gap:8px; min-height:40px; padding:0 14px; border-radius:10px; background:var(--panel-2); border:1px solid var(--line); font-size:14px; color:var(--muted)}
+.sort-btn b{color:var(--cream); font-weight:600}
+.sort-btn .chev{color:var(--brass)}
+.sort-menu{position:absolute; top:calc(100% + 6px); left:0; z-index:20; min-width:160px; display:flex; flex-direction:column; padding:4px; border-radius:10px; background:var(--panel-2); border:1px solid var(--brass); box-shadow:0 10px 24px rgba(0,0,0,.5)}
+.sort-menu button{min-height:42px; padding:0 12px; border-radius:7px; text-align:left; font-size:15px}
+.sort-menu button[aria-checked="true"]{color:var(--brass); font-weight:600}
+.sort-menu button:hover{background:rgba(255,255,255,.05)}
+.list-head{display:flex; justify-content:space-between; align-items:center; padding:0 14px; font-family:var(--cond); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.dir-btn{display:flex; align-items:center; gap:6px; min-height:32px; font-family:var(--cond); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.dir-btn.active{color:var(--brass)}
+.dir-btn .tri{width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid currentColor; transition:transform .15s}
+.dir-btn.asc .tri{transform:rotate(180deg)}
+.checkline{display:flex; align-items:center; gap:8px; font-size:14px}
+.checkline input{width:18px; height:18px; accent-color:var(--brass)}
+.sortline{display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted)}
+.sortline select{background:var(--panel-2); color:var(--cream); border:1px solid var(--line); border-radius:8px; min-height:36px; padding:0 8px; font:inherit}
+.table-list{display:flex; flex-direction:column; gap:8px; flex:1; overflow-y:auto; min-height:0}
+.tl-item{display:grid; grid-template-columns:1fr auto; gap:4px 12px; align-items:center; padding:12px 14px; border-radius:12px; background:var(--panel); border:1px solid var(--line); text-align:left}
+.tl-item b{font-size:15px}
+.tl-item .meta{font-size:13px; color:var(--muted); grid-column:1}
+.tl-item .seats{grid-row:1 / span 2; grid-column:2; text-align:right; font-family:var(--cond); font-size:20px; font-variant-numeric:tabular-nums}
+.tl-item .seats small{display:block; font-size:11px; letter-spacing:.1em; color:var(--muted)}
+.tl-item.full{opacity:.5}
+.pill{display:inline-block; font-family:var(--cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:1px 6px; border-radius:5px; border:1px solid var(--line); color:var(--cream); margin-right:4px}
+.pill.live{border-color:var(--ok); color:var(--ok)}
+.pill.cpu{border-color:var(--brass); color:var(--brass)}
+.pill.online{border-color:#7fb0ff; color:#7fb0ff}
+.stepper{display:grid; grid-template-columns:1fr auto 64px auto; align-items:center; gap:8px}
+.stepper b{font-family:var(--cond); font-size:22px; text-align:center; font-variant-numeric:tabular-nums}
+#nt-dc button{font-size:14px}
+#lobby,#newtable,#waiting{padding-block:18px; gap:14px}
+#newtable{overflow-y:auto}
+.seat-list{display:flex; flex-direction:column; gap:8px}
+.seat-row{display:flex; align-items:center; gap:10px; min-height:48px; padding:0 12px; border-radius:10px; background:var(--panel-2); border:1px solid var(--line)}
+.seat-row.empty{background:none; border-style:dashed; color:var(--muted)}
+.seat-row .sa{width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-family:var(--display); color:#14100a; flex:none}
+.seat-row .nm{flex:1; min-width:0; font-weight:600}
+.seat-row .tag{font-family:var(--cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--brass)}
+.seat-row .add-cpu{min-height:34px; padding:0 12px; border-radius:8px; border:1px dashed var(--brass); color:var(--brass); font-size:13px; font-weight:600}
+.seat-row .lvl-chip{min-height:30px; padding:0 9px; border-radius:7px; border:1px solid var(--brass); color:var(--brass); font-family:var(--cond); font-size:13px; letter-spacing:.04em}
+.seat-row .tag.cpu{color:var(--muted)}
+.seat-row .kick{min-height:34px; padding:0 10px; border-radius:8px; border:1px solid var(--line); color:#ff9a9a; font-size:13px}
+.wr-actions{display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:auto}
+.wr-actions .btn{min-width:200px}
+.wr-actions .linkish{font-size:14px; min-height:32px}
+.wr-status{margin:0; text-align:center; color:var(--muted); min-height:20px}
+.wr-status.go{color:var(--brass); font-weight:600}
+.rules-line{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:14px}
+.rules-line span{color:var(--muted)}
+.rules-line b{color:var(--cream); font-weight:600}
 .hist-list{display:flex; flex-direction:column; gap:8px}
 .hist-item{display:flex; justify-content:space-between; align-items:center; gap:10px; text-align:left; padding:12px; border-radius:12px; background:var(--panel-2); border:1px solid var(--line)}
 .hist-item b{display:block; font-size:15px}
@@ -240,21 +373,55 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .log-row .who{min-width:64px; font-weight:600}
 .log-row.sys{font-family:var(--cond); letter-spacing:.1em; text-transform:uppercase; font-size:12px; color:var(--brass); padding-top:6px; border-top:1px solid var(--line)}
 .log-row .muted{color:var(--muted)}
+/* ---------- Sideways phone ---------- */
+@media (orientation: landscape) and (max-height: 600px){
+  .screen{overflow-y:auto}
+  #menu,#login{flex-direction:row; flex-wrap:wrap; max-width:860px; align-content:center; gap:16px 44px}
+  #menu .hero,#login .hero{display:none}
+  .wordmark{font-size:56px; text-align:left}
+  .fineprint{flex-basis:100%; text-align:center}
+  #setup,#settings,#newtable,#lobby,#waiting{max-width:720px}
+  #lobby .table-list{flex:none; overflow:visible}
+  #lobby .table-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  #game{max-width:none; display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,380px); grid-template-rows:auto minmax(0,1fr); grid-template-areas:"table score" "table bar"; gap:8px 14px}
+  #game .table{grid-area:table; min-height:0; border-radius:90px}
+  #game .table::before{border-radius:70px}
+  #game .scorebar{grid-area:score}
+  .score-pop{left:auto; right:0; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
+  #game .mybar{grid-area:bar; justify-content:flex-end}
+  #game .hand{height:122px}
+  .seat.left,.seat.right{top:26%}
+  .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
+  .banner{top:31%}
+}
 @media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
 @media (max-height:640px){.table{min-height:200px} .hand{height:118px}}
 </style>
 
+<!-- ============ LOGIN ============ -->
+<section id="login" class="screen">
+  <div class="hero" id="hero-login" aria-hidden="true"></div>
+  <div class="wordmark">Thirteen<small>Spades high · 2 to 4 players</small></div>
+  <form class="login-form" id="login-form" autocomplete="off">
+    <label class="field"><span class="label">Username</span><input id="login-user" type="text" placeholder="Optional for now" maxlength="24"></label>
+    <label class="field"><span class="label">Password</span><input id="login-pass" type="password" placeholder="Optional for now" autocomplete="off"></label>
+    <button class="btn btn-brass" type="submit" id="btn-login">Log in</button>
+    <p class="fineprint">Prototype: no account needed. Tap Log in to start.</p>
+  </form>
+</section>
+
 <!-- ============ MENU ============ -->
-<section id="menu" class="screen">
+<section id="menu" class="screen" hidden>
   <div class="hero" id="hero" aria-hidden="true"></div>
   <div class="wordmark">Thirteen<small>Spades high · 2 to 4 players</small></div>
   <div class="menu-actions">
     <button class="btn btn-brass" id="btn-create">Create game</button>
+    <button class="btn btn-ghost" id="btn-lobby">Lobby</button>
     <button class="btn btn-ghost" id="btn-history">Hand history</button>
     <button class="btn btn-ghost" id="btn-rules">How to play</button>
     <button class="btn btn-ghost" id="btn-settings">Settings</button>
   </div>
-  <p class="fineprint">Prototype · Live mode vs. CPU opponents</p>
+  <p class="fineprint">Prototype · Live mode vs. CPU opponents · <button class="linkish" id="btn-logout">Log out</button></p>
 </section>
 
 <!-- ============ SETTINGS ============ -->
@@ -263,6 +430,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <button class="icon-btn" id="settings-back" aria-label="Back to menu">‹</button>
     <h2>Settings</h2>
   </div>
+  <button class="profile-row" id="btn-profile"><span id="pr-mini"></span><span class="pr-txt"><b id="pr-mini-name"></b><small>Profile · avatar and display name</small></span><span class="chev" aria-hidden="true">›</span></button>
   <div class="panel">
     <div class="label">Gameplay</div>
     <div class="toggle-row">
@@ -277,6 +445,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
       <div class="seg" id="seg-pace"><button data-v="relaxed">Relaxed</button><button data-v="normal">Normal</button><button data-v="quick">Quick</button></div></div>
   </div>
   <div class="panel">
+    <div class="label">Display</div>
+    <div class="set-row"><span>Screen rotation<small>Auto turns the table sideways with your phone. Locking works in the installed app.</small></span>
+      <div class="seg" id="seg-orient"><button data-v="auto">Auto</button><button data-v="portrait">Portrait</button><button data-v="landscape">Landscape</button></div></div>
+  </div>
+  <div class="panel">
     <div class="label">Cards</div>
     <div class="toggle-row">
       <span>Four-color deck<small>Clubs green, diamonds blue. Easier to tell suits apart.</small></span>
@@ -288,6 +461,131 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <div class="label">Data</div>
     <div class="set-row" id="clear-row"><span>Hand history<small id="hist-count"></small></span>
       <button class="btn btn-ghost" id="btn-clear-hist" style="min-height:40px;font-size:15px">Clear history</button></div>
+    <div class="set-row clear-row2"><span>Statistics<small>Your win record on this device</small></span>
+      <button class="btn btn-ghost" id="btn-clear-stats" style="min-height:40px;font-size:15px">Reset stats</button></div>
+  </div>
+</section>
+
+<!-- ============ PROFILE ============ -->
+<section id="profile" class="screen" hidden>
+  <div class="topline">
+    <button class="icon-btn" id="profile-back" aria-label="Back to settings">‹</button>
+    <h2>Profile</h2>
+  </div>
+  <div class="seg" id="pf-tabs"><button data-v="me" aria-pressed="true">Profile</button><button data-v="stats" aria-pressed="false">Statistics</button></div>
+  <div id="pf-me" class="pf-pane">
+  <div class="pf-card">
+    <div id="pf-avatar"></div>
+    <div class="pf-name-row" id="pf-name-view">
+      <b id="pf-name"></b>
+      <button class="pencil" id="pf-edit" aria-label="Change display name"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M11.3 1.7a1.5 1.5 0 0 1 2.1 0l.9.9a1.5 1.5 0 0 1 0 2.1L5.6 13.4 2 14l.6-3.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+    </div>
+    <form class="pf-name-edit" id="pf-name-form" hidden autocomplete="off">
+      <input id="pf-name-input" type="text" maxlength="16" aria-label="Display name" autocapitalize="off" spellcheck="false">
+      <div class="row"><button type="button" class="btn btn-ghost" id="pf-cancel">Cancel</button><button type="submit" class="btn btn-brass">Save</button></div>
+      <p class="form-err" id="pf-err" hidden></p>
+    </form>
+    <p class="hint" id="pf-guest-note" hidden>Guests can't change their avatar or name. Log in to customize.</p>
+  </div>
+  <div class="panel">
+    <div class="label">Color</div>
+    <div class="swatches" id="pf-colors"></div>
+  </div>
+  <div class="panel">
+    <div class="label">Animal</div>
+    <div class="swatches animals" id="pf-animals"></div>
+  </div>
+  </div>
+  <div id="pf-stats" class="pf-pane" hidden>
+    <div class="panel">
+      <div class="label">Against CPUs</div>
+      <div class="st-rows" id="st-cpu"></div>
+    </div>
+    <div class="panel">
+      <div class="label">Against players</div>
+      <div class="st-rows" id="st-human"></div>
+    </div>
+    <p class="hint">W: you went out first. T: you also emptied your hand during the final lap. Win % counts wins and losses only; ties are left out. Games with both players and CPUs at the table don't count.</p>
+  </div>
+</section>
+
+<!-- ============ LOBBY ============ -->
+<section id="lobby" class="screen" hidden>
+  <div class="lobby-tools">
+    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="live">Live</button><button data-v="online">Online</button></div></div>
+    <div class="lobby-tools-row">
+      <div class="sort-wrap">
+        <button class="sort-btn" id="lb-sort-btn" aria-haspopup="menu" aria-expanded="false">Sort <b id="lb-sort-cur">Mode</b><span class="chev" aria-hidden="true">▾</span></button>
+        <div class="sort-menu" id="lb-sort-menu" role="menu" hidden>
+          <button role="menuitemradio" data-v="mode">Mode</button>
+          <button role="menuitemradio" data-v="seats">Seats</button>
+        </div>
+      </div>
+      <button class="priv-btn" id="lb-private"><span class="lock" aria-hidden="true"></span>Private</button>
+      <button class="dir-btn" id="lb-dir"><span>Seats</span><i class="tri" aria-hidden="true"></i></button>
+    </div>
+  </div>
+  <div class="table-list" id="table-list"></div>
+  <button class="btn btn-brass" id="btn-newtable">Create table</button>
+  <p class="hint" style="text-align:center">Prototype: every other seat is a CPU with its own difficulty level.</p>
+</section>
+
+<!-- ============ CREATE TABLE ============ -->
+<section id="newtable" class="screen" hidden>
+  <div class="topline">
+    <button class="icon-btn" id="nt-back" aria-label="Back to lobby">‹</button>
+    <h2>Create table</h2>
+  </div>
+  <div class="panel">
+    <div class="label">Seats</div>
+    <div class="seg" id="nt-seats"><button data-v="2">2 players</button><button data-v="3">3 players</button><button data-v="4">4 players</button></div>
+  </div>
+  <div class="panel">
+    <div class="label">Scoring</div>
+    <div class="seg" id="nt-match"><button data-v="endless">Endless</button><button data-v="target">Target</button><button data-v="casual">Casual</button></div>
+    <div class="target-row" id="nt-target-row"><input type="range" id="nt-target" min="1" max="100" step="1" aria-label="Target score"><output id="nt-target-out">25</output></div>
+  </div>
+  <div class="panel">
+    <div class="label">Play mode</div>
+    <div class="seg" id="nt-play"><button data-v="live">Live</button><button data-v="online">Online</button></div>
+    <div id="nt-live-timers" style="display:flex;flex-direction:column;gap:12px">
+      <div class="stepper"><span>Turn timer</span><button class="icon-btn" data-step="turn:-5" aria-label="Shorter turn timer">−</button><b id="nt-turn">30s</b><button class="icon-btn" data-step="turn:5" aria-label="Longer turn timer">+</button></div>
+      <div class="stepper"><span>Time bank</span><button class="icon-btn" data-step="bank:-30" aria-label="Smaller time bank">−</button><b id="nt-bank">2:00</b><button class="icon-btn" data-step="bank:30" aria-label="Bigger time bank">+</button></div>
+      <div class="set-row"><span>Disconnect timer<small>How long play waits for a player who drops out</small></span>
+        <div class="seg" id="nt-dc"><button data-v="60">1:00</button><button data-v="90">1:30</button><button data-v="120">2:00</button><button data-v="180">3:00</button><button data-v="240">4:00</button><button data-v="300">5:00</button></div></div>
+    </div>
+    <p class="hint" id="nt-online-note" hidden>Online tables give each player 1 day per move, so turn and disconnect timers don't apply.</p>
+  </div>
+  <div class="panel">
+    <div class="toggle-row" style="background:none;border:0;padding:0">
+      <span>Private game<small>Hidden from the lobby. Players join with the name and password.</small></span>
+      <button class="switch" id="nt-private" role="switch" aria-checked="false" aria-label="Private game"></button>
+    </div>
+    <div class="priv-fields" id="nt-priv-fields" hidden>
+      <label class="field"><span class="label">Lobby name</span><input id="nt-pname" type="text" maxlength="24" placeholder="e.g. Friday Night" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label class="field"><span class="label">Password</span><input id="nt-ppass" type="password" maxlength="32" placeholder="Choose a password" autocomplete="new-password"></label>
+      <p class="hint" style="margin:0">Name and password are case-sensitive.</p>
+      <p class="form-err" id="nt-perr" hidden></p>
+    </div>
+  </div>
+  <button class="btn btn-brass" id="btn-opentable">Create lobby</button>
+</section>
+
+<!-- ============ WAITING ROOM ============ -->
+<section id="waiting" class="screen" hidden>
+  <div class="topline">
+    <button class="icon-btn" id="wr-leave" aria-label="Leave table">‹</button>
+    <h2 id="wr-title">Table</h2>
+  </div>
+  <div class="panel" id="wr-rules"></div>
+  <div class="panel">
+    <div class="label" id="wr-count">Seats</div>
+    <div class="seat-list" id="wr-seats"></div>
+  </div>
+  <p class="wr-status" id="wr-status"></p>
+  <div class="wr-actions">
+    <button class="btn btn-brass" id="wr-start">Start</button>
+    <button class="linkish" id="wr-leave2">Leave table</button>
   </div>
 </section>
 
@@ -303,7 +601,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
       <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
     </div>
     <div id="cpu-levels" style="display:flex;flex-direction:column;gap:10px"></div>
-    <p class="hint">Level 1 is a beginner. Level 2 plays solidly with some mistakes. Level 3 is strong.</p>
+    <p class="hint">1 Beginner · 2 Solid, some mistakes · 3 Strong · 4 Expert, rarely makes mistakes. CPU names are drawn at random to suit their level.</p>
   </div>
   <div class="panel">
     <div class="label">Scoring</div>
@@ -330,16 +628,22 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 <section id="game" class="screen" hidden>
   <div class="scorebar">
     <button class="icon-btn" id="btn-leave" aria-label="Menu">≡</button>
-    <button class="chips" id="chips" aria-label="Scoreboard, tap for breakdown"></button>
+    <button class="score-btn" id="chips" aria-expanded="false" aria-controls="score-pop"><span class="sb-ico" aria-hidden="true"></span>Scoreboard<span class="chev" aria-hidden="true">▾</span></button>
+    <label class="autopass" id="autopass" title="Pass automatically for the rest of this round"><input type="checkbox" id="ap-box"><span>Auto<br>pass</span></label>
+  </div>
+  <div class="score-pop" id="score-pop" role="dialog" aria-label="Scoreboard" hidden>
+    <div class="sp-head"><span class="label" id="sp-mode">Scoreboard</span><button class="sp-x" id="sp-close" aria-label="Close scoreboard">✕</button></div>
+    <div class="sp-rows" id="sp-rows"></div>
+    <button class="sp-more" id="sp-more">Breakdown by opponent ›</button>
   </div>
   <div class="table" id="table">
     <div class="pile" id="pile"></div>
     <div class="rankline" id="rankline" hidden></div>
   </div>
   <div class="mybar">
-    <div class="status"><p id="status"></p><span class="me-tag" id="me-tag"></span></div>
+    <div class="status"><p id="status"></p></div>
     <div class="hand" id="hand"></div>
-    <div class="controls">
+    <div class="controls" id="controls">
       <button class="ctl" id="btn-sort"><small>Sort</small><b id="sort-mode">None</b></button>
       <button class="ctl bank" id="btn-bank"><small>Bank</small><b id="bank-time">2:00</b></button>
       <button class="btn btn-ghost" id="btn-pass">Pass <span id="clock" style="font-variant-numeric:tabular-nums;opacity:.8"></span></button>
@@ -465,19 +769,42 @@ async function commitDeck(ids){
 /* ================= Persistence (per-viewer convenience) ================= */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
              set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const settings=Object.assign({tips:false,bank:true,pace:'normal',sort:'rank',four:false},store.get('thirteen.settings',{}));
+const settings=Object.assign({tips:false,bank:true,pace:'normal',sort:'rank',four:false,orient:'auto'},store.get('thirteen.settings',{}));
 const setup=Object.assign({cpus:3,levels:[2,2,2],match:'endless',target:25,play:'live'},store.get('thirteen.setup',{}));
 
 /* ================= Helpers ================= */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const COLORS=['#e8c26a','#4fd1c5','#f08a6c','#b9a3f5'];
-const CPU_NAMES=['Rosa','Vince','Dutch'];
+/* CPU names: drawn at random each match, flavored by level */
+const NAMES={
+  1:{a:['Wiggly','Soggy','Bumbling','Fuzzy','Giggly','Noodle','Pickle','Wobbly','Cheesy','Grumpy','Sneezy','Bouncy','Squishy','Dizzy','Lumpy','Mumbly','Snoozy','Clumsy','Toasty','Sticky','Burpy','Fluffy','Jiggly','Crumbly','Sploshy','Tubby','Zany','Goofy','Muddy','Itchy'],
+     b:['McGee','Pants','Beans','Muffin','Toes','Whiskers','Socks','Biscuit','Puddle','Nugget','Pickles','Doodle','Fritter','Sprinkles','Waffles','Noodles','Gumdrop','Bumble','Wigglesworth','Fartlebee','Snickerdoodle','Turnip','Pudding','Bananas','Dumpling','Kazoo','Moonpie','Crumpet','Tater','Spud']},
+  2:{a:['Martha','Tom','Agnes','Walter','Ruth','Harold','Edith','Frank','Mabel','George','Ida','Clyde','Doris','Hank','June','Otis','Pearl','Gus','Nell','Wes','Iris','Ned','Hattie','Abe','Lottie','Silas','Clara','Amos','Bess','Floyd','Opal','Jed','Minnie'],
+     b:['Cooper','Baker','Smith','Fletcher','Thatcher','Miller','Weaver','Tanner','Potter','Carter','Mason','Fisher','Shepherd','Brewer','Chandler','Wheeler','Draper','Turner','Barber','Hayward','Gardner','Collier']},
+  3:{m:['Sir','Lord','Baron','Viscount','Earl'], f:['Dame','Lady','Baroness','Viscountess','Countess'],
+     mn:['Aldric','Godfrey','Edmund','Percival','Osric','Leofric','Tristan','Cedric','Roderick','Bertram','Wulfric','Galahad','Hereward','Ulric','Baldwin'],
+     fn:['Rowena','Isolde','Gwendolyn','Matilda','Elowen','Beatrix','Wilhelmina','Guinevere','Eleanor','Margery','Sybil','Aveline','Edith','Rosamund']},
+  4:{m:['Marquess','Duke','Archduke','Grand Duke','Prince','Czar'], f:['Marchioness','Duchess','Archduchess','Grand Duchess','Princess','Tsarina'], n:['Warlord','Khan','Overlord','Sovereign'],
+     mn:['Vladislav','Maximilian','Lucan','Konstantin','Alaric','Casimir','Ragnar','Dragomir','Leopold','Sigismund','Temujin','Draven','Bogdan'],
+     fn:['Octavia','Seraphina','Valentina','Theodora','Ysolde','Anastasia','Evangeline','Morgana','Ottoline','Ludovica','Katarina','Isadora']}
+};
+const pickOf=a=>a[rngInt(a.length)];
+function cpuName(level,used){
+  const N=NAMES[level]||NAMES[2];
+  for(let k=0;k<40;k++){
+    let nm;
+    if(level<=2) nm=`${pickOf(N.a)} ${pickOf(N.b)}`;
+    else { const fem=rngInt(2)===1, titles=fem?N.f.concat(N.n||[]):N.m.concat(N.n||[]); nm=`${pickOf(titles)} ${pickOf(fem?N.fn:N.mn)}` }
+    const w=nm.split(' '); if(!used.some(u=>u.split(' ').some(x=>w.includes(x)&&!/^(Sir|Lord|Lady|Dame|Baron|Baroness|Viscount|Viscountess|Earl|Countess|Duke|Duchess|Prince|Princess|Czar|Tsarina|Khan|Warlord|Overlord|Sovereign|Marquess|Marchioness|Archduke|Archduchess|Grand)$/.test(x)))) return nm;
+  }
+  return `${pickOf(N.a||N.mn)} ${used.length+1}`;
+}
 function cardHTML(c,w,x,y,extra=''){
   const red=c.s===1||c.s===2, fc=c.r>=8&&c.r<=10;
   return `<div class="card ${red?'red':''} s${c.s} ${extra}" data-id="${c.id}" style="--w:${w}px;left:${x}px;${y!=null?'top:'+y+'px;':''}" aria-label="${RANKS[c.r]} of ${SUITN[c.s]}s"><span class="tl">${RANKS[c.r]}<i>${SUITS[c.s]}</i></span>${fc?`<span class="face">${RANKS[c.r]}</span>`:`<span class="pip">${SUITS[c.s]}</span>`}</div>`;
 }
-function show(id){['menu','setup','game','settings'].forEach(s=>$('#'+s).hidden=s!==id)}
+function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile'].forEach(s=>$('#'+s).hidden=s!==id)}
 let toastT;
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast'+(kind?' '+kind:'');t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,kind==='info'?2200:3200)}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -486,8 +813,10 @@ const signed=v=>(v>0?'+':v<0?'−':'')+Math.abs(v);
 /* ================= Menu ================= */
 (function hero(){
   const cards=[mk(12,0),mk(12,1),mk(12,2),mk(12,3)];
-  $('#hero').innerHTML=cards.map((c,i)=>cardHTML(c,72,74,20)).join('');
-  [...$('#hero').children].forEach((el,i)=>el.style.transform=`rotate(${(i-1.5)*14}deg)`);
+  ['#hero','#hero-login'].forEach(sel=>{
+    $(sel).innerHTML=cards.map(c=>cardHTML(c,72,74,20)).join('');
+    [...$(sel).children].forEach((el,i)=>el.style.transform=`rotate(${(i-1.5)*14}deg)`);
+  });
 })();
 function syncSettings(){
   $('#tips-switch').setAttribute('aria-checked',settings.tips);
@@ -495,6 +824,7 @@ function syncSettings(){
   $('#four-switch').setAttribute('aria-checked',settings.four);
   document.body.classList.toggle('four',settings.four);
   $('#seg-pace').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===settings.pace));
+  $('#seg-orient').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===settings.orient));
   $('#deck-preview').innerHTML=[mk(11,3),mk(11,2),mk(11,1),mk(11,0)].map(c=>`<span class="mc s${c.s} ${c.s===1||c.s===2?'red':''}">${cname(c)}</span>`).join('');
   const n=store.get('thirteen.history',[]).length;
   $('#hist-count').textContent=n?`${n} saved game${n>1?'s':''} on this device`:'No saved games';
@@ -505,15 +835,35 @@ $('#tips-switch').onclick=()=>{settings.tips=!settings.tips;saveSettings()};
 $('#bank-switch').onclick=()=>{settings.bank=!settings.bank;saveSettings()};
 $('#four-switch').onclick=()=>{settings.four=!settings.four;saveSettings()};
 $('#seg-pace').querySelectorAll('button').forEach(b=>b.onclick=()=>{settings.pace=b.dataset.v;saveSettings()});
+$('#seg-orient').querySelectorAll('button').forEach(b=>b.onclick=()=>{settings.orient=b.dataset.v;saveSettings();applyOrientation(true)});
+/* Rotation: the layout always follows the screen's real shape. Lock/unlock asks the device; browsers only allow it in the installed app or full screen. */
+function applyOrientation(fromUser){
+  const so=screen.orientation; if(!so) return;
+  try{
+    if(settings.orient==='auto'){ so.unlock&&so.unlock(); return }
+    const p=so.lock(settings.orient==='portrait'?'portrait':'landscape');
+    if(p&&p.catch) p.catch(()=>{ if(fromUser) toast('This view can\'t lock rotation. Install the app to lock it, or use your phone\'s rotation setting.','info') });
+  }catch(e){}
+}
+applyOrientation(false);
 $('#btn-clear-hist').onclick=()=>{
   const b=$('#btn-clear-hist');
   if(b.dataset.arm){store.set('thirteen.history',[]);delete b.dataset.arm;b.textContent='Clear history';syncSettings();toast('Hand history cleared.','info');return}
   b.dataset.arm='1'; b.textContent='Tap again to clear';
   setTimeout(()=>{if(b.dataset.arm){delete b.dataset.arm;b.textContent='Clear history'}},4000);
 };
-$('#btn-settings').onclick=()=>{syncSettings();show('settings')};
+$('#btn-clear-stats').onclick=()=>{
+  const b=$('#btn-clear-stats');
+  if(b.dataset.arm){store.set('thirteen.stats',blankStats());delete b.dataset.arm;b.textContent='Reset stats';toast('Statistics reset.','info');return}
+  b.dataset.arm='1'; b.textContent='Tap again to reset';
+  setTimeout(()=>{if(b.dataset.arm){delete b.dataset.arm;b.textContent='Reset stats'}},4000);
+};
+$('#btn-settings').onclick=()=>{syncSettings();renderProfile();show('settings')};
 $('#settings-back').onclick=()=>show('menu');
 syncSettings();
+$('#login-form').addEventListener('submit',e=>{e.preventDefault(); $('#login-pass').value=''; show('menu')});
+$('#btn-logout').onclick=()=>show('login');
+$('#btn-lobby').onclick=()=>openLobby();
 $('#btn-create').onclick=()=>{renderSetup();show('setup')};
 $('#btn-rules').onclick=showRules;
 $('#btn-history').onclick=showHistory;
@@ -532,8 +882,8 @@ function renderSetup(){
   const box=$('#cpu-levels'); box.innerHTML='';
   for(let i=0;i<setup.cpus;i++){
     const row=document.createElement('div'); row.className='cpu-row';
-    row.innerHTML=`<div class="cpu-name"><span class="dot" style="background:${COLORS[i+1]}"></span>${CPU_NAMES[i]}</div>
-      <div class="seg">${[1,2,3].map(l=>`<button data-l="${l}" aria-pressed="${setup.levels[i]===l}">Level ${l}</button>`).join('')}</div>`;
+    row.innerHTML=`<div class="cpu-name"><span class="dot" style="background:${COLORS[i+1]}"></span>CPU ${i+1}</div>
+      <div class="seg">${[1,2,3,4].map(l=>`<button data-l="${l}" aria-pressed="${setup.levels[i]===l}">${['','Beginner','Solid','Strong','Expert'][l]}</button>`).join('')}</div>`;
     row.querySelectorAll('button').forEach(b=>b.onclick=()=>{setup.levels[i]=+b.dataset.l;store.set('thirteen.setup',setup);renderSetup()});
     box.appendChild(row);
   }
@@ -552,9 +902,11 @@ const SEATS={2:['bottom','top'],3:['bottom','left','right'],4:['bottom','left','
 function newMatch(){
   const n=setup.cpus+1;
   const players=[{name:'You',cpu:false,color:COLORS[0]}];
-  for(let i=0;i<setup.cpus;i++) players.push({name:CPU_NAMES[i],cpu:true,level:setup.levels[i],color:COLORS[i+1]});
-  M={n,players,bankOn:settings.bank,match:setup.match,target:setup.target,play:setup.play,bal:Array.from({length:n},()=>Array(n).fill(0)),over:false};
+  const used=[];
+  for(let i=0;i<setup.cpus;i++){const nm=cpuName(setup.levels[i],used); used.push(nm); players.push({name:nm,cpu:true,level:setup.levels[i],color:COLORS[i+1]})}
+  M={n,players,turnTime:30,bankTime:120,bankOn:settings.bank,match:setup.match,target:setup.target,play:setup.play,bal:Array.from({length:n},()=>Array(n).fill(0)),over:false};
 }
+const seatTag=p=>p.tag||('LEVEL '+p.level);
 const net=i=>M.bal[i].reduce((a,b)=>a+b,0);
 function pay(from,to,pts){M.bal[to][from]+=pts;M.bal[from][to]-=pts}
 
@@ -568,12 +920,13 @@ function deal(){
   const n=M.n;
   G={hands:M.players.map((_,i)=>deck.slice(i*13,i*13+13)),leftover:52-13*n,
      cur:0,table:null,prev:null,lastPlayer:-1,passes:0,opening:true,openCard:null,finalLap:null,over:false,
-     action:Array(n).fill(null),log:[],startHand:null,deck:deck.map(c=>c.id),commit:null,bank:Array(n).fill(120),turnLeft:30,bankActive:false,confirmSpade:false};
+     action:Array(n).fill(null),autoPass:false,log:[],startHand:null,deck:deck.map(c=>c.id),commit:null,bank:Array(n).fill(M.bankTime||120),turnLeft:M.turnTime||30,bankActive:false,confirmSpade:false};
   let low=null; G.hands.forEach((h,i)=>h.forEach(c=>{if(c.s===0&&(!low||c.id<low.c.id))low={c,i}}));
   G.openCard=low.c; G.cur=low.i;
   G.startHand=[...G.hands[0]].sort((a,b)=>a.id-b.id).map(c=>c.id); G.log.push({t:'open',p:G.cur,c:[G.openCard.id]});
   sel.clear(); sortMode=null; $('#sort-mode').textContent='None';
   const g=G; commitDeck(g.deck).then(c=>{g.commit=c; if(G===g&&G.dealing) renderStatus()});
+  setAutoPass(false);
   buildSeats();
   G.dealing=true; G.shown=0; G.got=Array(n).fill(0); render();
   dealAnimation(()=>{G.dealing=false; beginOpening()});
@@ -623,6 +976,7 @@ function startTurn(){
     G.wait=setTimeout(()=>doPass(i,true),750); return;
   }
   if(p.cpu){G.action[i]='think';renderSeats();G.wait=setTimeout(()=>cpuAct(i),{relaxed:4300,normal:2800,quick:1300}[settings.pace]+Math.random()*400)}
+  else if(G.autoPass&&G.table){ G.wait=setTimeout(()=>{if(G&&!G.over&&G.cur===0&&G.autoPass&&G.table) doPass(0,true)},600); render() }
   else startClock();
 }
 function advance(){G.cur=(G.cur+1)%M.n;startTurn()}
@@ -635,7 +989,7 @@ function doPlay(i,play){
   G.prev=G.table; G.table={...play,by:i}; G.lastPlayer=i; G.passes=0; G.opening=false; G.action[i]='play';
   if(i===0){sel.clear();G.confirmSpade=false}
   const left=G.hands[i];
-  if(G.finalLap){G.finalLap.left--; render(); if(G.finalLap.left<=0) return finish('win'); return advance()}
+  if(G.finalLap){G.finalLap.left--; if(G.finalLap.left<=0) return endLap(); render(); return advance()}
   if(left.length===1&&left[0].id===SPADE2){render();return finish('spade',i)}
   if(left.length===0){
     G.finalLap={winner:i,left:M.n-1}; G.log.push({t:'out',p:i});
@@ -648,10 +1002,10 @@ function doPass(i,auto){
   stopClock();
   if(i===0){G.confirmSpade=false}
   G.action[i]=auto?'auto':'pass'; G.log.push({t:auto?'auto':'pass',p:i});
-  if(G.finalLap){G.finalLap.left--; if(G.finalLap.left<=0){render();return finish('win')} return advance()}
+  if(G.finalLap){G.finalLap.left--; if(G.finalLap.left<=0) return endLap(); return advance()}
   G.passes++;
   if(G.passes>=M.n-1){
-    G.table=null; G.prev=null; G.passes=0; G.cur=G.lastPlayer; G.action=G.action.map(()=>null); G.log.push({t:'round',p:G.cur});
+    G.table=null; G.prev=null; G.passes=0; G.cur=G.lastPlayer; G.action=G.action.map(()=>null); G.log.push({t:'round',p:G.cur}); setAutoPass(false);
     const p=M.players[G.cur];
     banner(`New round · ${p.cpu?p.name+' leads':'your lead'}`);
     G.wait=setTimeout(startTurn,700); render(); return;
@@ -659,9 +1013,23 @@ function doPass(i,auto){
   advance();
 }
 
+/* Final lap is over: hold the table for 2 seconds so the last play can be seen, then show the summary */
+function endLap(){
+  stopClock(); G.lapDone=true; G.cur=-1; render();
+  G.wait=setTimeout(()=>{if(G&&!G.over) finish('win')},2000);
+}
+
+/* Auto-pass: you pass automatically whenever there's a play to beat, until this round ends.
+   It never passes on your lead (you have to play) and switches itself off when a new round starts. */
+function setAutoPass(on){
+  if(!G) return; G.autoPass=on; $('#ap-box').checked=on; $('#autopass').classList.toggle('on',on);
+  if(on&&G.cur===0&&G.table&&!G.over&&!G.opening&&!G.dealing&&!G.openPreview) doPass(0,true);
+}
+$('#ap-box').onchange=e=>setAutoPass(e.target.checked);
+
 /* ================= Timers (Live mode, your seat) ================= */
 function startClock(){
-  stopClock(); G.turnLeft=30; G.bankActive=false; renderClock();
+  stopClock(); G.turnLeft=M.turnTime||30; G.bankActive=false; renderClock();
   if(M.play!=='live') return;
   G.tick=setInterval(()=>{
     const dt=.25;
@@ -762,6 +1130,7 @@ function cpuDecide(i){
     if(lvl===1) return plays[Math.floor(Math.random()*plays.length)];
     return plays.sort((a,b)=>b.cards.length-a.cards.length||power(a)-power(b))[0];
   }
+  if(lvl===4) return expertDecide(i,plays,hand,T);
   const counts={}; hand.forEach(c=>counts[c.r]=(counts[c.r]||0)+1);
   const breaks=x=>{if(x.kind===5)return 0;return counts[x.cards[0].r]>x.cards.length?1:0};
   const avg=x=>x.cards.reduce((a,c)=>a+c.r,0)/x.cards.length;
@@ -796,6 +1165,75 @@ function cpuDecide(i){
   return pick;
 }
 
+/* ===== Level 4: Expert =====
+   Plays only on information a real player has: its own hand, the table, red last-card borders, and every card
+   it has seen played this game. Plans its hand into the fewest plays, keeps "boss" plays (ones no unseen
+   card can beat) to win back the lead late, and never makes random mistakes. */
+function seenCards(){const s=new Set();G.log.forEach(e=>{if(e.t==='play')e.c.forEach(id=>s.add(id))});return s}
+function partition(hand){
+  let rest=[...hand]; const groups=[];
+  const byR=()=>{const m={};rest.forEach(c=>(m[c.r]=m[c.r]||[]).push(c));return m};
+  // five-card hands first, choosing ones that break the fewest pairs/triples, lowest first
+  for(let guard=0;guard<2&&rest.length>=5;guard++){
+    const m=byR(); const fives=allPlays(rest).filter(p=>p.kind===5);
+    if(!fives.length) break;
+    const cost=p=>p.cards.reduce((a,c)=>a+(m[c.r].length>1&&p.cat<4?1:0),0)*3+p.cat*-0.2+power(p)/1e6;
+    fives.sort((a,b)=>cost(a)-cost(b)); const f=fives[0];
+    if(cost(f)>=6) break;
+    groups.push(f); rest=rest.filter(c=>!f.cards.includes(c));
+  }
+  Object.values(byR()).forEach(g=>{
+    if(g.length===4){groups.push(classify(g.slice(0,2)),classify(g.slice(2)))}
+    else groups.push(classify(g));
+  });
+  return groups;
+}
+function isBoss(p,unk){
+  if(unbeatable(p)) return true;
+  if(p.kind===1){const a=p.cards[0];return !unk.some(c=>(c.s===a.s&&c.r>a.r)||(c.r===a.r&&c.s>a.s))}
+  const m={}; unk.forEach(c=>m[c.r]=(m[c.r]||0)+1);
+  if(p.kind===2) return !Object.entries(m).some(([r,n])=>+r>p.r&&n>=2);
+  if(p.kind===3) return !Object.entries(m).some(([r,n])=>+r>p.r&&n>=3);
+  return false;
+}
+function expertDecide(i,plays,hand,T){
+  const seen=seenCards(), mine=new Set(hand.map(c=>c.id));
+  const unk=[];for(let id=0;id<52;id++) if(!seen.has(id)&&!mine.has(id)) unk.push(mk(id>>2,id&3));
+  const threat=G.hands.some((h,j)=>j!==i&&h.length===1);
+  const after=p=>hand.filter(c=>!p.cards.includes(c));
+  const steps=h=>h.length?partition(h).length:0;
+  const base=steps(hand);
+  const avg=p=>p.cards.reduce((a,c)=>a+c.r,0)/p.cards.length;
+  const hasS2=hand.some(c=>c.id===SPADE2);
+  if(!T){
+    // endgame: lead a boss play first, then go out
+    const plan=partition(hand);
+    if(plan.length<=2){const boss=plan.find(g=>isBoss(g,unk)&&plays.some(p=>p.kind===g.kind&&p.cards.length===g.cards.length)); if(boss) return plays.find(p=>p.cards.length===boss.cards.length&&p.cards.every(c=>boss.cards.includes(c)))||boss}
+    if(hasS2&&hand.length<=4) return classify([hand.find(c=>c.id===SPADE2)]);
+    const score=p=>{
+      let s=steps(after(p))*10+avg(p)*0.7-p.cards.length*0.8;
+      if(threat&&p.kind===1&&!isBoss(p,unk)) s+=25;
+      if(isBoss(p,unk)&&base>3) s+=6;          // save control cards for later
+      return s;
+    };
+    return plays.sort((a,b)=>score(a)-score(b))[0];
+  }
+  const cost=p=>{
+    const extra=steps(after(p))-(base-1);      // plays that break up planned groups cost more
+    let c=extra*8+power(p)/(p.kind===5?600000:52)*6;
+    if(isBoss(p,unk)&&base>3&&!threat) c+=5;   // don't burn control early
+    return c;
+  };
+  plays.sort((a,b)=>cost(a)-cost(b));
+  if(threat){ // stop someone going out: play the strongest legal answer
+    return T.kind===1?plays.sort((a,b)=>power(b)-power(a))[0]:plays[0];
+  }
+  const best=plays[0];
+  if(steps(after(best))<=1&&isBoss(best,unk)) return best; // wins the lead and leaves one play to go out
+  if(cost(best)>=8&&hand.length>4) return null;          // would wreck the plan: pass instead
+  return best;
+}
+
 /* ================= Rendering ================= */
 function buildSeats(){
   const table=$('#table'); table.querySelectorAll('.seat,.setaside,.banner').forEach(e=>e.remove());
@@ -803,13 +1241,15 @@ function buildSeats(){
     if(i===0) return;
     const p=M.players[i], d=document.createElement('div');
     d.className='seat '+pos; d.id='seat'+i;
-    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div></div>
-      <div class="nameplate"><b>${esc(p.name)}</b><span>LEVEL ${p.level}</span></div>`;
+    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div></div>
+      <div class="nameplate"><b>${esc(p.name)}</b></div>`;
     table.appendChild(d);
   });
 }
 function seatState(i){
-  if(G.over||G.dealing) return '';
+  if(G.dealing) return '';
+  if(G.hands[i]&&G.hands[i].length===0&&(G.finalLap||G.lapDone||G.over)) return 'out';
+  if(G.over) return '';
   if(G.cur===i&&!G.openPreview) return 'turn';
   if(G.cur===i&&G.openPreview) return 'turn';
   if(G.table&&G.table.by===i) return 'ontop';
@@ -820,9 +1260,8 @@ function renderSeats(){
   for(let i=1;i<M.n;i++){
     const el=$('#seat'+i); if(!el) continue;
     const st=seatState(i);
-    el.classList.toggle('turn',st==='turn'); el.classList.toggle('ontop',st==='ontop'); el.classList.toggle('passed',st==='passed');
-    const a0=G.action[i], sub=el.querySelector('.nameplate span');
-    sub.textContent=G.over?'LEVEL '+M.players[i].level:st==='passed'?(a0==='auto'?'AUTO-PASS':'PASS'):st==='turn'?'THINKING':'LEVEL '+M.players[i].level;
+    ['turn','ontop','passed','out'].forEach(c=>el.classList.toggle(c,st===c));
+    el.querySelector('.pass-stamp').hidden=st!=='passed';
     const mini=el.querySelector('.mini'), len=G.dealing?G.got[i]:G.hands[i].length;
     mini.classList.toggle('last',!G.dealing&&len===1); mini.classList.toggle('gone',len===0);
   }
@@ -835,17 +1274,35 @@ function renderPile(){
   const row=(cards,top,cls,boxW)=>{const st=cards.length>1?26:0, cw=w+st*(cards.length-1), x0=(boxW-cw)/2;
     return cards.map((c,k)=>cardHTML(c,w,x0+k*st,top,cls)).join('')};
   const widthOf=cards=>w+(cards.length>1?26:0)*(cards.length-1);
-  const tag=(label,p)=>`<span class="dot" style="background:${p.color}"></span><b>${esc(label)}</b><span>${p.cpu?esc(p.name):'You'}</span>`;
+  const tag=label=>`<b>${esc(label)}</b>`;
   if(!t&&G.openPreview&&G.cur!==0){
     const op=M.players[G.cur];
     pile.innerHTML=`<div class="pile-cards" style="width:${w}px;height:${H}px">${row([G.openCard],0,'opening',w)}</div>`;
-    rl.innerHTML=tag('Lowest club',op); rl.hidden=false; return;
+    rl.innerHTML=tag(handRank(classify([G.openCard]))); rl.hidden=false; return;
   }
   if(!t){pile.innerHTML=`<div class="pile-empty">${G.opening?'Lowest club opens':'Table clear'}</div>`; rl.hidden=true; return}
   const prev=G.prev, boxW=Math.max(widthOf(t.cards),prev?widthOf(prev.cards):0);
   pile.innerHTML=`<div class="pile-cards" style="width:${boxW}px;height:${H+(prev?lift:0)}px">${prev?row(prev.cards,0,'ghost',boxW):''}${row(t.cards,prev?lift:0,'fresh',boxW)}</div>`;
-  const kind=t.kind===5?t.name:(t.kind===1?'Single':t.kind===2?'Pair':'Triple');
-  rl.innerHTML=tag(kind,M.players[t.by]); rl.hidden=false;
+  rl.innerHTML=tag(handRank(t)); rl.hidden=false;
+}
+/* The rank of the play on the table, in words: "Queen of Spades", "Pair of 7s", "Flush, Spades, 2 high" */
+const RANK_WORD=['3','4','5','6','7','8','9','10','Jack','Queen','King','Ace','2'];
+const RANK_PL=['3s','4s','5s','6s','7s','8s','9s','10s','Jacks','Queens','Kings','Aces','2s'];
+const SUIT_WORD=['Clubs','Diamonds','Hearts','Spades'];
+const faceWord=v=>({14:'Ace',13:'King',12:'Queen',11:'Jack'})[v]||String(v);
+function handRank(p){
+  if(p.kind===1){const c=p.cards[0];return `${RANK_WORD[c.r]} of ${SUIT_WORD[c.s]}`}
+  if(p.kind===2) return `Pair of ${RANK_PL[p.r]}`;
+  if(p.kind===3) return `Three ${RANK_PL[p.r]}`;
+  switch(p.cat){
+    case 1: return `Two pair, ${RANK_PL[p.key[0]]} and ${RANK_PL[p.key[1]]}`;
+    case 2: return `Straight, ${faceWord(p.key[0])} high`;
+    case 3: return `Flush, ${SUIT_WORD[p.key[0]]}, ${RANK_WORD[p.key[1]]} high`;
+    case 4: return `Full house, ${RANK_PL[p.key[0]]} full`;
+    case 5: return `Four ${RANK_PL[p.key[0]]}`;
+    case 6: return p.royal?'Royal flush':`Straight flush, ${SUIT_WORD[p.key[0]]}, ${faceWord(p.key[1])} high`;
+  }
+  return p.name;
 }
 let L={off:0,step:30,w:58};
 function renderHand(){
@@ -860,6 +1317,7 @@ function renderStatus(){
   const me=G.cur===0&&!G.over&&!G.openPreview&&!G.dealing, st=$('#status');
   let msg='';
   if(G.over) msg='';
+  else if(G.lapDone) msg='<b>Final lap complete.</b> Counting the cards…';
   else if(G.dealing) msg='Dealing…'+(G.commit?` <span style="color:var(--muted);font-size:12px">Deal ID ${G.commit.hash.slice(0,8)}</span>`:'');
   else if(G.openPreview) msg=`${G.cur===0?'You hold':esc(M.players[G.cur].name)+' holds'} the lowest club, the <b>${cname(G.openCard)}</b>. It plays automatically.`;
   else if(me){
@@ -872,8 +1330,7 @@ function renderStatus(){
     if(G.finalLap) msg='Final lap · '+msg;
   }
   st.innerHTML=msg;
-  const s0=seatState(0), tag=$('#me-tag'); tag.className='me-tag'+(s0?' '+s0:'');
-  tag.innerHTML=`<span class="dot" style="background:${COLORS[0]}"></span>${s0==='turn'?'YOUR TURN':s0==='passed'?(G.action[0]==='auto'?'YOU · AUTO-PASS':'YOU · PASS'):'YOU'}`;
+  $('#controls').classList.toggle('myturn',me);
   $('#btn-play').disabled=!me; $('#btn-pass').disabled=!me||G.opening||!G.table;
 }
 function renderClock(){
@@ -889,9 +1346,24 @@ function renderClock(){
   $('#btn-bank').querySelector('small').textContent=M.bankOn?'Bank on':'Bank off';
 }
 function renderChips(){
-  const lab=M.match==='target'?`to ${M.target}`:M.match==='casual'?'casual':'';
-  $('#chips').innerHTML=M.players.map((p,i)=>{const v=net(i);return `<span class="chip"><b class="${v>0?'pos':v<0?'neg':''}">${signed(v)||'0'}</b><span><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</span></span>`}).join('')+(lab?`<span class="chip" style="flex:0 0 auto"><b style="color:var(--brass);font-size:13px;letter-spacing:.08em;text-transform:uppercase">${lab}</b><span>mode</span></span>`:'');
+  if(!$('#score-pop').hidden) renderScorePop();
 }
+function renderScorePop(){
+  $('#sp-mode').textContent=M.match==='target'?`Scoreboard · first to ${M.target}`:M.match==='casual'?'Scoreboard · casual, this game only':'Scoreboard · endless';
+  $('#sp-rows').innerHTML=M.players.map((p,i)=>({p,i,v:net(i)})).sort((a,b)=>b.v-a.v).map(({p,i,v})=>
+    `<div class="sp-row"><span class="dot" style="background:${p.color}"></span><span class="nm">${i===0?'You':esc(p.name)}</span><b class="${v>0?'pos':v<0?'neg':''}">${signed(v)||'0'}</b></div>`).join('');
+}
+function scorePop(open){
+  $('#score-pop').hidden=!open; $('#chips').setAttribute('aria-expanded',open);
+  if(open) renderScorePop();
+}
+document.addEventListener('click',e=>{
+  if($('#score-pop').hidden) return;
+  if(e.target.closest('#score-pop')||e.target.closest('#chips')) return;
+  scorePop(false);
+});
+$('#sp-close').onclick=()=>scorePop(false);
+$('#sp-more').onclick=()=>{scorePop(false);showBreakdown()};
 function render(){renderSeats();renderPile();renderHand();renderStatus();renderClock();renderChips()}
 function banner(text,ms=1700){
   const t=$('#table'); t.querySelector('.banner')?.remove(); clearTimeout(G.bannerT);
@@ -946,6 +1418,7 @@ function finish(type,loser){
   }
   render();
   const delta=M.players.map((_,i)=>net(i)-before[i]);
+  recordStat(type==='win'&&winner===0?'w':type==='win'&&counts[0]===0?'t':'l');
   saveHistory({type,winner,loser,counts,delta,head});
   let champ=-1;
   if(M.match==='target'){M.players.forEach((_,i)=>{if(net(i)>=M.target&&(champ<0||net(i)>net(champ)))champ=i})}
@@ -970,7 +1443,7 @@ function finish(type,loser){
   </div>`;
   $('#overlay').hidden=false;
   $('#r-menu').onclick=leave;
-  if(matchOver){$('#r-again').onclick=()=>{newMatch();deal()}}
+  if(matchOver){$('#r-again').onclick=()=>{if(M.table){M.bal=M.bal.map(r=>r.map(()=>0));M.over=false}else newMatch();deal()}}
   else{
     startBreakControls();
   }
@@ -1025,13 +1498,14 @@ function startBreakControls(){
   },1000);
   draw();
 }
-function leave(){clearTimers();G=null;$('#overlay').hidden=true;$('#toast').hidden=true;show('menu')}
+function leave(){scorePop(false);clearTimers();G=null;$('#overlay').hidden=true;$('#toast').hidden=true;show('menu')}
 
 /* ================= Sheets: scoreboard, leave, rules ================= */
 function openSheet(html){$('#overlay').innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;$('#overlay').hidden=false}
 function closeSheet(){$('#overlay').hidden=true}
 $('#overlay').addEventListener('click',e=>{if(e.target.id==='overlay'&&!(G&&G.over))closeSheet()});
-$('#chips').onclick=()=>{
+$('#chips').onclick=()=>scorePop($('#score-pop').hidden);
+function showBreakdown(){
   if(!M) return;
   const cards=M.players.map((p,i)=>{const v=net(i);
     const lines=M.players.map((q,j)=>j===i?'':`<div class="bd-line"><span><span class="dot" style="background:${q.color}"></span>vs ${esc(q.name)}</span><b class="${M.bal[i][j]>0?'pos':M.bal[i][j]<0?'neg':''}">${signed(M.bal[i][j])||'0'}</b></div>`).join('');
@@ -1058,6 +1532,289 @@ function showRules(){
   <h4>Ending</h4><ul><li>When someone goes out, everyone else gets one last turn to shed cards.</li><li>The winner scores 1 point per card left in each opponent's hand.</li><li>If the 2♠ is ever your only card, you lose and pay every opponent.</li></ul>
   </div><button class="btn btn-ghost" id="rl-close">Close</button>`);
   $('#rl-close').onclick=closeSheet;
+}
+
+/* ================= Profile =================
+   Avatar = a color plus an optional animal (no animal shows your initial). The display name starts
+   auto-generated; logged-in players can change it, guests can't change anything. */
+const AV_COLORS=['#e8c26a','#f08a6c','#e85d75','#c77dff','#7f8cff','#4fd1c5','#5ad08a','#a3d65c','#f2a65a','#d9b263','#8fb8de','#c9a27e'];
+const AV_ANIMALS=['🐸','🐧','🦆','🐙','🦊','🐻','🐼','🐨','🐷','🐮','🐵','🦉','🐢','🦀','🐳','🦥','🦦','🐔','🐹','🦝','🐌','🦔','🐝'];
+const PF_ADJ=['Lucky','Sneaky','Brave','Jolly','Quiet','Swift','Clever','Bold','Sly','Mighty','Cosmic','Rusty','Velvet','Silver','Wild','Dapper'];
+const PF_NOUN=['Otter','Badger','Falcon','Moose','Panda','Raven','Gecko','Bison','Heron','Walrus','Lynx','Puffin','Yak','Ferret','Marmot','Newt'];
+const genName=()=>`${pickOf(PF_ADJ)}${pickOf(PF_NOUN)}${10+rngInt(990)}`;
+const profile=Object.assign({name:'',color:AV_COLORS[0],animal:null},store.get('thirteen.profile',{}));
+if(!profile.name){profile.name=genName(); store.set('thirteen.profile',profile)}
+let session={guest:false};
+function avatarHTML(size,p=profile){
+  return `<span class="av" style="width:${size}px;height:${size}px;background:${p.color};font-size:${Math.round(size*(p.animal?.58:.5))}px">${p.animal||esc((p.name||'?')[0].toUpperCase())}</span>`;
+}
+function saveProfile(){store.set('thirteen.profile',profile); renderProfile()}
+function renderProfile(){
+  $('#pr-mini').innerHTML=avatarHTML(42); $('#pr-mini-name').textContent=profile.name;
+  $('#pf-avatar').innerHTML=avatarHTML(104); $('#pf-name').textContent=profile.name;
+  $('#pf-edit').hidden=session.guest; $('#pf-guest-note').hidden=!session.guest;
+  $('#pf-colors').classList.toggle('locked',session.guest); $('#pf-animals').classList.toggle('locked',session.guest);
+  $('#pf-colors').innerHTML=AV_COLORS.map(c=>`<button class="swatch" data-c="${c}" style="background:${c}" aria-label="Color ${c}" aria-pressed="${profile.color===c}"></button>`).join('');
+  $('#pf-animals').innerHTML=`<button class="swatch none" data-a="" aria-label="No animal, show initial" aria-pressed="${!profile.animal}">${esc(profile.name[0].toUpperCase())}</button>`+
+    AV_ANIMALS.map(a=>`<button class="swatch" data-a="${a}" aria-pressed="${profile.animal===a}">${a}</button>`).join('');
+  document.querySelectorAll('#pf-colors .swatch').forEach(b=>b.onclick=()=>{profile.color=b.dataset.c;saveProfile()});
+  document.querySelectorAll('#pf-animals .swatch').forEach(b=>b.onclick=()=>{profile.animal=b.dataset.a||null;saveProfile()});
+}
+$('#btn-profile').onclick=()=>{renderProfile();pfTab('me');show('profile')};
+function pfTab(v){
+  $('#pf-tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
+  $('#pf-me').hidden=v!=='me'; $('#pf-stats').hidden=v!=='stats'; if(v==='stats') renderStats();
+}
+$('#pf-tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{nameEdit(false);pfTab(b.dataset.v)});
+
+/* ================= Statistics =================
+   One entry per game (deal). Games where every opponent is a CPU go under "Against CPUs"; games where every
+   opponent is a real player go under "Against players"; mixed tables aren't counted. */
+const blankStats=()=>({cpu:{2:{p:0,w:0,t:0},3:{p:0,w:0,t:0},4:{p:0,w:0,t:0}},human:{2:{p:0,w:0,t:0},3:{p:0,w:0,t:0},4:{p:0,w:0,t:0}}});
+function loadStats(){const s=store.get('thirteen.stats',null);return s&&s.cpu&&s.human?s:blankStats()}
+/* result: 'w' you went out first, 't' you also emptied your hand during the final lap, 'l' anything else */
+function recordStat(result){
+  const opp=M.players.slice(1); if(!opp.length) return;
+  const bucket=opp.every(p=>p.cpu)?'cpu':opp.every(p=>!p.cpu)?'human':null;
+  if(!bucket) return;
+  const s=loadStats(), row=s[bucket][M.n]; if(!row) return;
+  row.p++; if(result==='w') row.w++; if(result==='t') row.t=(row.t||0)+1; store.set('thirteen.stats',s);
+}
+function statRows(b,emptyMsg){
+  const rows=[2,3,4].map(n=>({n,t:0,...b[n]})), tot=rows.reduce((a,r)=>({p:a.p+r.p,w:a.w+r.w,t:a.t+(r.t||0)}),{p:0,w:0,t:0});
+  if(!tot.p) return `<p class="st-empty">${emptyMsg}</p>`;
+  const row=(label,r,cls='')=>{const dec=r.p-(r.t||0), pct=dec?r.w/dec*100:null; // ties left out: wins ÷ (wins + losses)
+    return `<div class="st-row ${cls}"><span class="fmt">${label}<small>${r.p?`${r.w} W · ${r.p-r.w-(r.t||0)} L · ${r.t||0} T`:'No games'}</small></span>
+      <span class="st-bar"><i style="width:${pct||0}%"></i></span>
+      <span class="st-pct ${pct==null?'none':''}">${pct==null?'—':pct.toFixed(pct%1?1:0)+'%'}</span></div>`};
+  return rows.map(r=>row(`${r.n}-player`,r)).join('')+row('All',tot,'total');
+}
+function renderStats(){
+  const s=loadStats();
+  $('#st-cpu').innerHTML=statRows(s.cpu,'No games against CPUs yet. Play a game and your record shows up here.');
+  $('#st-human').innerHTML=statRows(s.human,'No games against other players yet. These appear once online play is live.');
+}
+$('#profile-back').onclick=()=>{nameEdit(false);syncSettings();show('settings')};
+function nameEdit(on){
+  if(on&&session.guest) return;
+  $('#pf-name-view').hidden=on; $('#pf-name-form').hidden=!on; $('#pf-err').hidden=true;
+  if(on){const i=$('#pf-name-input'); i.value=profile.name; i.focus(); i.select()}
+}
+$('#pf-edit').onclick=()=>nameEdit(true);
+$('#pf-cancel').onclick=()=>nameEdit(false);
+$('#pf-name-form').onsubmit=e=>{
+  e.preventDefault();
+  const v=$('#pf-name-input').value.trim().replace(/\s+/g,' '), err=$('#pf-err');
+  if(v.length<3){err.textContent='Use at least 3 characters.';err.hidden=false;return}
+  if(!/^[A-Za-z0-9 _.-]+$/.test(v)){err.textContent='Use letters, numbers, spaces, dots, dashes or underscores.';err.hidden=false;return}
+  profile.name=v; saveProfile(); nameEdit(false); toast('Display name updated.','info');
+};
+
+/* ================= Public lobby (prototype simulation) =================
+   Real tables need the game server. Here the lobby is filled with sample tables, players join on a timer,
+   and once a game starts the other seats are played by Level 2 CPUs. Your table's timers are applied for real. */
+/* Every seat that isn't you is a CPU with a difficulty level and a name to match */
+function seatBot(t,used,level){level=level||1+rngInt(4); const nm=cpuName(level,used); t.bots[nm]=level; return nm}
+const tableDefaults={seats:4,match:'endless',target:25,play:'live',turn:30,bank:120,dc:120};
+const draft=Object.assign({},tableDefaults,store.get('thirteen.tabledraft',{}));
+let LB={tables:[],private:[],filter:'all',sort:'mode',dir:'desc'}, WR=null;
+function myName(){return profile.name}
+function sampleTables(){
+  const out=[], hosts=[];
+  for(let k=0;k<9;k++){
+    const seats=2+rngInt(3), t0={bots:{}}, host=seatBot(t0,hosts); hosts.push(host);
+    const players=[host]; const fill=rngInt(seats); for(let j=0;j<fill;j++){const n=seatBot(t0,hosts);hosts.push(n);players.push(n)}
+    out.push({id:'t'+k+Date.now(),host,seats,players,bots:t0.bots,match:['endless','target','casual'][rngInt(3)],target:[15,25,50][rngInt(3)],
+      play:rngInt(4)===0?'online':'live',turn:15+5*rngInt(16),bank:60+30*rngInt(5),dc:[60,90,120,180,240,300][rngInt(6)],age:k*2+rngInt(3)});
+  }
+  return out;
+}
+const LVL=['','Beginner','Solid','Strong','Expert'];
+const matchLabel=t=>t.match==='target'?`Target ${t.target}`:t.match==='casual'?'Casual':'Endless';
+/* One CPU-hosted room is always open for every mode (Live, Online) and table size (2, 3, 4 seats).
+   When one fills up or starts, a fresh one replaces it. */
+function ensureCpuRooms(){
+  const names=LB.tables.flatMap(t=>t.players);
+  
+  ['live','online'].forEach(play=>[2,3,4].forEach(seats=>{
+    if(LB.tables.some(t=>t.cpuRoom&&t.play===play&&t.seats===seats&&t.players.length<t.seats)) return;
+    const level=1+rngInt(4), host=cpuName(level,names); names.push(host);
+    LB.tables.push({id:'cpu'+play+seats+Date.now()+rngInt(1e6),cpuRoom:true,host,seats,players:[host],bots:{[host]:level},
+      match:'endless',target:25,play,turn:30,bank:120,dc:120,age:rngInt(20)});
+  }));
+}
+function openLobby(){
+  LB.tables=sampleTables();
+  if(!LB.private.some(x=>x.demo)){const t0={bots:{}}, host=seatBot(t0,[],3);
+    LB.private.push({id:'demo'+Date.now(),demo:true,private:true,name:'Demo',pass:'thirteen',host,seats:4,players:[host],bots:t0.bots,match:'endless',target:25,play:'live',turn:30,bank:120,dc:120})}
+  renderLobby(); show('lobby');
+}
+function renderLobby(){
+  $('#lb-filter').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===LB.filter));
+  $('#lb-sort-cur').textContent=LB.sort==='seats'?'Seats':'Mode';
+  $('#lb-sort-menu').querySelectorAll('button').forEach(b=>b.setAttribute('aria-checked',b.dataset.v===LB.sort));
+  const db=$('#lb-dir'); db.classList.toggle('asc',LB.dir==='asc'); db.classList.toggle('active',LB.sort==='seats');
+  db.setAttribute('aria-label',LB.dir==='desc'?'Seats: highest to lowest. Tap for lowest to highest.':'Seats: lowest to highest. Tap for highest to lowest.');
+  ensureCpuRooms();
+  // full tables disappear from the list
+  let list=LB.tables.filter(t=>t.players.length<t.seats&&(LB.filter==='all'||t.play===LB.filter));
+  const dir=LB.dir==='asc'?1:-1;
+  // Mode: Live tables first, then Online; within each, Endless, Target, Casual; then busiest first
+  const modeKey=t=>(t.play==='live'?0:3)+['endless','target','casual'].indexOf(t.match);
+  list.sort(LB.sort==='seats'?(a,b)=>dir*(a.players.length-b.players.length)||modeKey(a)-modeKey(b)
+    :(a,b)=>modeKey(a)-modeKey(b)||b.players.length-a.players.length||a.age-b.age);
+  $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
+    return `<button class="tl-item${full?' full':''}" data-id="${t.id}" ${full?'disabled':''}><b>${esc(t.host)}'s table</b>
+      <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
+      <span class="meta"><span class="pill ${t.play}">${t.play}</span>${t.bots&&t.bots[t.host]?`<span class="pill cpu">CPU · ${LVL[t.bots[t.host]]}</span>`:''}${matchLabel(t)}${t.play==='live'?` · ${t.turn}s turns · ${fmt(t.bank)} bank`:' · 1 day per move'}</span></button>`}).join('')
+    :'<p class="hint" style="text-align:center;padding:20px 0">No tables match. Try another filter or create one.</p>';
+  document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
+}
+$('#lb-filter').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.filter=b.dataset.v;renderLobby()});
+function sortMenu(open){$('#lb-sort-menu').hidden=!open;$('#lb-sort-btn').setAttribute('aria-expanded',open)}
+$('#lb-sort-btn').onclick=e=>{e.stopPropagation();sortMenu($('#lb-sort-menu').hidden)};
+$('#lb-sort-menu').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.sort=b.dataset.v;sortMenu(false);renderLobby()});
+document.addEventListener('click',e=>{if(!e.target.closest('.sort-wrap'))sortMenu(false)});
+/* Triangle: first tap sorts seats highest to lowest (points down), next tap lowest to highest (points up) */
+$('#lb-dir').onclick=()=>{if(LB.sort!=='seats'){LB.sort='seats';LB.dir='desc'}else LB.dir=LB.dir==='desc'?'asc':'desc';renderLobby()};
+$('#lobby-back').onclick=()=>show('menu');
+$('#btn-newtable').onclick=()=>{renderNewTable();show('newtable')};
+$('#nt-back').onclick=()=>show('lobby');
+function renderNewTable(){
+  const mark=(id,v)=>$(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(v)));
+  mark('#nt-seats',draft.seats); mark('#nt-match',draft.match); mark('#nt-play',draft.play); mark('#nt-dc',draft.dc);
+  $('#nt-target-row').hidden=draft.match!=='target'; $('#nt-target').value=draft.target; $('#nt-target-out').textContent=draft.target;
+  $('#nt-turn').textContent=draft.turn+'s'; $('#nt-bank').textContent=fmt(draft.bank);
+  $('#nt-live-timers').hidden=draft.play!=='live'; $('#nt-online-note').hidden=draft.play==='live';
+  store.set('thirteen.tabledraft',draft);
+}
+[['#nt-seats','seats',true],['#nt-match','match'],['#nt-play','play'],['#nt-dc','dc',true]].forEach(([id,key,num])=>
+  $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{draft[key]=num?+b.dataset.v:b.dataset.v;renderNewTable()}));
+$('#nt-target').oninput=e=>{draft.target=+e.target.value;$('#nt-target-out').textContent=draft.target;store.set('thirteen.tabledraft',draft)};
+document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{
+  const [k,d]=b.dataset.step.split(':'); const lim=k==='turn'?[15,90]:[60,180];
+  draft[k]=Math.max(lim[0],Math.min(lim[1],draft[k]+ +d)); renderNewTable();
+});
+let ntPrivate=false;
+$('#nt-private').onclick=()=>{ntPrivate=!ntPrivate; $('#nt-private').setAttribute('aria-checked',ntPrivate); $('#nt-priv-fields').hidden=!ntPrivate; $('#nt-perr').hidden=true; if(ntPrivate) $('#nt-pname').focus()};
+$('#btn-opentable').onclick=()=>{
+  const t={id:'mine'+Date.now(),host:myName(),seats:draft.seats,players:[myName()],bots:{},match:draft.match,target:draft.target,play:draft.play,turn:draft.turn,bank:draft.bank,dc:draft.dc};
+  if(ntPrivate){
+    const name=$('#nt-pname').value.trim(), pass=$('#nt-ppass').value, err=$('#nt-perr');
+    if(!name){err.textContent='Enter a lobby name.';err.hidden=false;return}
+    if(pass.length<4){err.textContent='Use a password of at least 4 characters.';err.hidden=false;return}
+    if(LB.private.some(x=>x.name===name)){err.textContent='That lobby name is taken. Try another.';err.hidden=false;return}
+    t.private=true; t.name=name; t.pass=pass; LB.private.push(t);
+    $('#nt-ppass').value='';
+  }
+  enterWaiting(t,true);
+};
+/* Private lobbies never appear in the list. In the real app the server checks the password (stored hashed);
+   this prototype keeps them on this device, plus one demo lobby so joining can be tried. */
+function findPrivate(name,pass){return LB.private.find(x=>x.name===name.trim()&&x.pass===pass)} // both case-sensitive
+$('#lb-private').onclick=()=>{
+  openSheet(`<div class="label">Private lobby</div><h3>Join a private game</h3>
+    <form class="priv-fields" id="pj-form" autocomplete="off">
+      <label class="field"><span class="label">Lobby name</span><input id="pj-name" type="text" maxlength="24" autocapitalize="off" spellcheck="false"></label>
+      <label class="field"><span class="label">Password</span><input id="pj-pass" type="password" maxlength="32"></label>
+      <p class="hint" style="margin:0">Name and password are case-sensitive.</p>
+      <p class="form-err" id="pj-err" hidden></p>
+      <div class="row"><button type="button" class="btn btn-ghost" id="pj-cancel">Cancel</button><button type="submit" class="btn btn-brass">Join</button></div>
+    </form>`);
+  $('#pj-name').focus();
+  $('#pj-cancel').onclick=closeSheet;
+  $('#pj-form').onsubmit=e=>{
+    e.preventDefault();
+    const t=findPrivate($('#pj-name').value,$('#pj-pass').value), err=$('#pj-err');
+    if(!t){err.textContent='No private lobby matches that name and password.';err.hidden=false;$('#pj-pass').value='';return}
+    if(t.players.length>=t.seats){err.textContent='That lobby is full.';err.hidden=false;return}
+    closeSheet(); enterWaiting(t,false);
+  };
+};
+
+function enterWaiting(t,isHost){
+  leaveWaiting(true);
+  const me=myName();
+  WR={t:{...t,bots:{...(t.bots||{})},players:isHost?[me]:[...t.players.filter(n=>n!==me),me]},src:t.id,isHost,me,count:null,timers:[]};
+  $('#wr-title').textContent=t.private?`${t.name}`:isHost?'Your table':`${t.host}’s table`;
+  $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">
+    ${t.private?'<span>Lobby <b>Private</b></span>':''}<span>Mode <b>${t.play==='live'?'Live':'Online'}</b></span><span>Scoring <b>${matchLabel(t)}</b></span>
+    ${t.play==='live'?`<span>Turn <b>${t.turn}s</b></span><span>Bank <b>${fmt(t.bank)}</b></span><span>Disconnect <b>${fmt(t.dc)}</b></span>`:'<span>Moves <b>1 day each</b></span>'}</div>`;
+  show('waiting'); renderWaiting(); checkFull(); scheduleJoin();
+}
+function scheduleJoin(){
+  if(!WR) return;
+  WR.timers.push(setTimeout(()=>{
+    if(!WR) return; const t=WR.t;
+    if(t.players.length<t.seats&&WR.count==null){
+      if(t.players.length>1&&rngInt(7)===0&&!WR.isHost){ /* someone else gets bored and leaves */
+        const others=t.players.filter(n=>n!==WR.me&&n!==t.host&&!t.bots[n]); if(others.length){t.players=t.players.filter(n=>n!==others[0]); toast(`${others[0]} left the table.`,'info')}
+      } else { t.players.push(seatBot(t,t.players)) }
+      renderWaiting(); checkFull();
+    }
+    scheduleJoin();
+  },2500+rngInt(3500)));
+}
+function checkFull(){
+  const t=WR.t;
+  if(t.players.length>=t.seats&&WR.count==null) startCountdown();
+  if(t.players.length<t.seats&&WR.count!=null){clearInterval(WR.countT);WR.count=null;renderWaiting()}
+}
+function startCountdown(){
+  WR.count=15; renderWaiting();
+  WR.countT=setInterval(()=>{if(!WR)return; WR.count--; if(WR.count<=0){clearInterval(WR.countT);return launchTable()} renderWaiting()},1000);
+}
+function renderWaiting(){
+  if(!WR) return; const t=WR.t;
+  $('#wr-count').textContent=`Seats · ${t.players.length}/${t.seats}`;
+  let rows='';
+  for(let k=0;k<t.seats;k++){
+    const n=t.players[k], col=COLORS[k%4];
+    if(!n){rows+=`<div class="seat-row empty"><span class="sa" style="background:var(--panel-2)"></span><span class="nm">Waiting for a player…</span>
+      ${WR.isHost?'<button class="add-cpu" data-add="1">+ Add CPU</button>':''}</div>`;continue}
+    const isMe=n===WR.me, isHostRow=n===t.host, bot=t.bots[n];
+    rows+=`<div class="seat-row">${isMe?avatarHTML(30):`<span class="sa" style="background:${col}">${esc(n[0])}</span>`}<span class="nm">${esc(n)}</span>
+      ${isHostRow?'<span class="tag">Host</span>':''}${isMe?'<span class="tag">You</span>':''}
+      ${bot?(WR.isHost?`<button class="lvl-chip" data-lvl="${esc(n)}" title="Tap to change level">${LVL[bot]} ▾</button>`:`<span class="tag cpu">CPU · ${LVL[bot]}</span>`):''}
+      ${WR.isHost&&!isMe?`<button class="kick" data-kick="${esc(n)}">Remove</button>`:''}</div>`;
+  }
+  $('#wr-seats').innerHTML=rows;
+  document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>{const n=b.dataset.kick; t.players=t.players.filter(x=>x!==n); const wasBot=!!t.bots[n]; delete t.bots[n]; if(!wasBot) toast(`${n} was removed.`,'info'); renderWaiting();checkFull()});
+  document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+    if(t.players.length>=t.seats) return;
+    const level=WR.lastLevel||2, nm=cpuName(level,t.players); t.players.push(nm); t.bots[nm]=level; renderWaiting(); checkFull();
+  });
+  document.querySelectorAll('[data-lvl]').forEach(b=>b.onclick=()=>{ // cycle Beginner → Solid → Strong → Expert, with a name to match
+    const old=b.dataset.lvl, level=t.bots[old]%4+1, nm=cpuName(level,t.players.filter(x=>x!==old));
+    t.players[t.players.indexOf(old)]=nm; delete t.bots[old]; t.bots[nm]=level; WR.lastLevel=level; renderWaiting();
+  });
+  const st=$('#wr-status');
+  if(WR.count!=null){st.className='wr-status go';st.textContent=WR.isHost?`Table full. Starting in ${WR.count}s. Make any changes, or tap Start to begin now.`:`Table full. Starting in ${WR.count}s…`}
+  else{st.className='wr-status';st.textContent=WR.isHost?(t.players.length<2?'Waiting for players to join.':'Start now, or wait for the table to fill.'):'Waiting for the table to fill or the host to start.'}
+  const sb=$('#wr-start'); sb.hidden=!WR.isHost; sb.disabled=t.players.length<2;
+}
+function leaveWaiting(silent){
+  if(!WR) return; WR.timers.forEach(clearTimeout); clearInterval(WR.countT); WR=null;
+}
+$('#wr-leave').onclick=$('#wr-leave2').onclick=()=>{
+  if(WR){
+    const src=LB.tables.concat(LB.private).find(x=>x.id===WR.src);
+    if(src&&!WR.isHost){src.players=WR.t.players.filter(n=>n!==WR.me); src.bots=WR.t.bots}
+    if(WR.isHost&&WR.t.private) LB.private=LB.private.filter(x=>x.id!==WR.src); // host leaving closes a private lobby
+  }
+  leaveWaiting(); if(!LB.tables.length) LB.tables=sampleTables(); renderLobby(); show('lobby');
+};
+$('#wr-start').onclick=()=>{if(WR&&WR.isHost&&WR.t.players.length>=2){clearInterval(WR.countT);launchTable()}};
+function launchTable(){
+  const t=WR.t, me=WR.me; LB.tables=LB.tables.filter(x=>x.id!==WR.src); LB.private=LB.private.filter(x=>x.id!==WR.src||x.demo); leaveWaiting();
+  const others=t.players.filter(n=>n!==me);
+  const players=[{name:'You',cpu:false,color:COLORS[0]}];
+  others.forEach((n,i)=>players.push({name:n,cpu:true,level:t.bots&&t.bots[n]||2,tag:t.bots&&t.bots[n]?'CPU':n===t.host?'HOST':'PLAYER',color:COLORS[i+1]}));
+  const n=players.length;
+  M={n,players,turnTime:t.play==='live'?t.turn:30,bankTime:t.play==='live'?t.bank:120,bankOn:settings.bank,match:t.match,target:t.target,play:'live',
+     bal:Array.from({length:n},()=>Array(n).fill(0)),over:false,table:t};
+  show('game');
+  requestAnimationFrame(()=>{deal(); if(t.play==='online') toast('Online play needs the game server. This table plays as Live for now.','info')});
 }
 
 /* ================= Hand history ================= */
@@ -1158,7 +1915,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261031-161731) */
+/* Offline support + automatic updates (build 20261101-160710) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
