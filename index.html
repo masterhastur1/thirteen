@@ -180,7 +180,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .nameplate{background:rgba(8,12,9,.82); border:1px solid var(--line); transition:border-color .2s, box-shadow .2s; border-radius:7px; padding:2px 6px; text-align:center; line-height:1.1}
 .nameplate{width:max-content}
 .nameplate b{display:block; font-size:11px; font-weight:600; line-height:1.15; white-space:nowrap}
-.nameplate b span{display:block; overflow:hidden; text-overflow:ellipsis}
+.nameplate b span{display:block}
+.nameplate{cursor:pointer}
+.name-pop{position:absolute; z-index:8; white-space:nowrap; max-width:calc(100% - 16px); padding:6px 12px; border-radius:9px; background:rgba(8,12,9,.72); border:1px solid rgba(217,178,99,.55); color:var(--cream); font-size:14px; font-weight:600; backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); pointer-events:none; animation:fadein .15s both}
 .pass-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:5; font-family:var(--cond); font-weight:700; font-size:22px; letter-spacing:.08em; color:rgba(255,255,255,.92); background:rgba(10,14,11,.55); border:2px solid rgba(255,255,255,.75); border-radius:7px; padding:0 7px; line-height:1.25; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.6); animation:stamp .18s ease-out both}
 @keyframes stamp{from{transform:translate(-50%,-50%) rotate(-14deg) scale(1.5); opacity:0}}
 .bubble{position:absolute; top:-6px; left:50%; transform:translate(-50%,-100%); background:var(--cream); color:#1b1b1b; font-family:var(--cond); font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:6px; white-space:nowrap}
@@ -1266,10 +1268,27 @@ function seatState(i){
 /* Titled names (Strong and Expert CPUs) go on two lines: the title, then the name.
    Every other name stays on one line, however long. Nameplates are only as wide as their text. */
 const TITLES=['Grand Duchess','Grand Duke','Sir','Lord','Lady','Dame','Baron','Baroness','Viscount','Viscountess','Earl','Countess','Marquess','Marchioness','Duke','Duchess','Archduke','Archduchess','Prince','Princess','Czar','Tsarina','Warlord','Khan','Overlord','Sovereign'];
+/* Any line longer than 12 characters is cut to 12 plus ".."; tap the nameplate to see the full name. */
+const clip12=x=>x.length>12?x.slice(0,12).trimEnd()+'..':x;
 function plateName(name){
   const t=TITLES.find(t=>name.startsWith(t+' '));
-  return t?`<span>${esc(t)}</span><span>${esc(name.slice(t.length+1))}</span>`:`<span>${esc(name)}</span>`;
+  const lines=t?[t,name.slice(t.length+1)]:[name];
+  return lines.map(l=>`<span>${esc(clip12(l))}</span>`).join('');
 }
+function showFullName(seatEl,name){
+  const table=$('#table'); table.querySelector('.name-pop')?.remove();
+  const pop=document.createElement('div'); pop.className='name-pop'; pop.textContent=name; table.appendChild(pop);
+  const tr=table.getBoundingClientRect(), np=seatEl.querySelector('.nameplate').getBoundingClientRect();
+  const w=pop.offsetWidth, x=Math.max(8,Math.min(tr.width-w-8,np.left-tr.left+np.width/2-w/2));
+  pop.style.left=x+'px'; pop.style.top=(np.bottom-tr.top+6)+'px';
+  clearTimeout(showFullName.t); showFullName.t=setTimeout(()=>pop.remove(),2500);
+}
+$('#table').addEventListener('click',e=>{
+  const plate=e.target.closest('.nameplate'); const pop=$('#table .name-pop');
+  if(!plate){pop&&pop.remove();return}
+  const seat=plate.closest('.seat'), i=+seat.id.replace('seat',''), p=M&&M.players[i];
+  if(p) showFullName(seat,p.name);
+});
 function renderSeats(){
   for(let i=1;i<M.n;i++){
     const el=$('#seat'+i); if(!el) continue;
@@ -1961,7 +1980,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-132117) */
+/* Offline support + automatic updates (build 20261103-132927) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
