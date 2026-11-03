@@ -249,6 +249,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .stuck{position:relative; height:84px}
 .stuck .card{--w:58px; left:0; top:0}
 .breakdown{display:flex; flex-direction:column; gap:10px}
+.bd-toggle{align-self:flex-start; display:flex; align-items:center; gap:6px; min-height:36px; font-size:14px; font-weight:600; color:var(--brass)}
+.leave-confirm{display:flex; flex-direction:column; gap:10px; padding:12px; border-radius:12px; border:1px solid var(--brass); background:var(--panel-2)}
+.leave-confirm p{margin:0}
 .bd{border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:6px}
 .bd-head{display:flex; justify-content:space-between; align-items:baseline}
 .bd-head b{font-family:var(--cond); font-size:22px; font-variant-numeric:tabular-nums}
@@ -1431,7 +1434,13 @@ function finish(type,loser){
     ${matchOver?`<p>${esc(head)} ${champ===0?'You':esc(M.players[champ].name)} reached ${net(champ)} of ${M.target} points.</p>`:''}
     ${stuck}${sub?`<p>${esc(sub)}</p>`:''}
     <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="row">${matchOver
+    <button class="bd-toggle" id="r-bd" aria-expanded="false">View by opponent <span aria-hidden="true">▾</span></button>
+    <div class="breakdown" id="r-bd-list" hidden>${breakdownHTML()}</div>
+    <div class="leave-confirm" id="r-leave" hidden>
+      <p><b>Leave this match?</b> ${M.match==='casual'?'You\'ll return to the menu.':'The match tally will be lost.'}</p>
+      <div class="row"><button class="btn btn-ghost" id="r-stay">Stay</button><button class="btn btn-brass" id="r-go">Leave</button></div>
+    </div>
+    <div class="row" id="r-actions">${matchOver
       ?`<button class="btn btn-ghost" id="r-menu">Menu</button><button class="btn btn-brass" id="r-again">New match</button>`
       :`<button class="btn btn-ghost" id="r-menu">Menu</button><button class="btn btn-brass" id="r-next">Deal now <span id="r-count">30</span></button>`}</div>
     ${matchOver?'':`<p class="brk-status" id="brk-status"></p>
@@ -1442,7 +1451,12 @@ function finish(type,loser){
     </div>`}
   </div>`;
   $('#overlay').hidden=false;
-  $('#r-menu').onclick=leave;
+  $('#r-bd').onclick=()=>{const l=$('#r-bd-list'), open=l.hidden; l.hidden=!open; $('#r-bd').setAttribute('aria-expanded',open); $('#r-bd span').textContent=open?'▴':'▾'};
+  // Menu asks first. The countdown keeps running so no one can hold up the table.
+  const askLeave=on=>{ $('#r-leave').hidden=!on; $('#r-actions').hidden=on; if(on) $('#r-leave').scrollIntoView({block:'nearest'})};
+  $('#r-menu').onclick=()=>askLeave(true);
+  $('#r-stay').onclick=()=>askLeave(false);
+  $('#r-go').onclick=leave;
   if(matchOver){$('#r-again').onclick=()=>{if(M.table){M.bal=M.bal.map(r=>r.map(()=>0));M.over=false}else newMatch();deal()}}
   else{
     startBreakControls();
@@ -1505,11 +1519,14 @@ function openSheet(html){$('#overlay').innerHTML=`<div class="sheet" role="dialo
 function closeSheet(){$('#overlay').hidden=true}
 $('#overlay').addEventListener('click',e=>{if(e.target.id==='overlay'&&!(G&&G.over))closeSheet()});
 $('#chips').onclick=()=>scorePop($('#score-pop').hidden);
-function showBreakdown(){
-  if(!M) return;
-  const cards=M.players.map((p,i)=>{const v=net(i);
+function breakdownHTML(){
+  return M.players.map((p,i)=>{const v=net(i);
     const lines=M.players.map((q,j)=>j===i?'':`<div class="bd-line"><span><span class="dot" style="background:${q.color}"></span>vs ${esc(q.name)}</span><b class="${M.bal[i][j]>0?'pos':M.bal[i][j]<0?'neg':''}">${signed(M.bal[i][j])||'0'}</b></div>`).join('');
     return `<div class="bd"><div class="bd-head"><span class="who"><span class="dot" style="background:${p.color}"></span><strong>${esc(p.name)}</strong></span><b class="${v>0?'pos':v<0?'neg':''}">${signed(v)||'0'}</b></div>${lines}</div>`}).join('');
+}
+function showBreakdown(){
+  if(!M) return;
+  const cards=breakdownHTML();
   const mode={endless:'Endless tally',target:`Target: first to ${M.target}`,casual:'Casual: this game only'}[M.match];
   openSheet(`<div class="label">${mode}</div><h3>Scoreboard</h3><p>Each line is a running balance with that opponent. Positive means they owe you.</p><div class="breakdown">${cards}</div><button class="btn btn-ghost" id="sb-close">Close</button>`);
   $('#sb-close').onclick=closeSheet;
@@ -1915,7 +1932,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261101-160710) */
+/* Offline support + automatic updates (build 20261103-073628) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
