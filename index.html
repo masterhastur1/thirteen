@@ -392,7 +392,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #lobby .table-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
   /* Game: a wide poker table across the whole screen; your hand and controls sit underneath it */
   #game{max-width:none; display:grid; padding-block:6px; gap:6px 10px;
-    grid-template-columns:64px minmax(0,1fr) 168px; grid-template-rows:44px minmax(0,1fr) 57px 57px;
+    grid-template-columns:64px minmax(0,1fr) 148px; grid-template-rows:44px minmax(0,1fr) 63px 63px;
     grid-template-areas:"score score score" "table table table" "sort hand pass" "bank hand play"}
   #game .scorebar{grid-area:score; width:min(520px,56%)}
   #game .mybar{display:contents}
@@ -401,7 +401,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .table{grid-area:table; min-height:0; border-radius:999px; border-width:10px}
   #game .table::before{inset:18px; border-radius:999px}
   #game .table::after{border-radius:999px}
-  #game .hand{grid-area:hand; height:120px; align-self:end}
+  #game .hand{grid-area:hand; height:132px; align-self:end}
   /* Sort and Bank: half size, stacked to the left of your cards. Pass and Play: stacked on the right. */
   #game .controls{display:contents}
   #btn-sort{grid-area:sort} #btn-bank{grid-area:bank} #btn-pass{grid-area:pass} #btn-play{grid-area:play}
@@ -1999,7 +1999,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-133901) */
+/* Offline support + automatic updates (build 20261103-134237) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
