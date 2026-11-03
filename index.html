@@ -1683,6 +1683,8 @@ function renderLobby(){
   const db=$('#lb-dir'); db.classList.toggle('asc',LB.dir==='asc'); db.classList.toggle('active',LB.sort==='seats');
   db.setAttribute('aria-label',LB.dir==='desc'?'Seats: highest to lowest. Tap for lowest to highest.':'Seats: lowest to highest. Tap for highest to lowest.');
   ensureCpuRooms();
+  // guests can join tables (public or private) but can't create them
+  const nb=$('#btn-newtable'); nb.disabled=session.guest; nb.textContent=session.guest?'Log in to create a table':'Create table';
   // full tables disappear from the list
   let list=LB.tables.filter(t=>t.players.length<t.seats&&(LB.filter==='all'||t.play===LB.filter));
   const dir=LB.dir==='asc'?1:-1;
@@ -1705,7 +1707,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.sort-wrap'))sortMen
 /* Triangle: first tap sorts seats highest to lowest (points down), next tap lowest to highest (points up) */
 $('#lb-dir').onclick=()=>{if(LB.sort!=='seats'){LB.sort='seats';LB.dir='desc'}else LB.dir=LB.dir==='desc'?'asc':'desc';renderLobby()};
 $('#lobby-back').onclick=()=>show('menu');
-$('#btn-newtable').onclick=()=>{renderNewTable();show('newtable')};
+$('#btn-newtable').onclick=()=>{if(session.guest) return; renderNewTable();show('newtable')};
 $('#nt-back').onclick=()=>show('lobby');
 function renderNewTable(){
   const mark=(id,v)=>$(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(v)));
@@ -1725,6 +1727,7 @@ document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{
 let ntPrivate=false;
 $('#nt-private').onclick=()=>{ntPrivate=!ntPrivate; $('#nt-private').setAttribute('aria-checked',ntPrivate); $('#nt-priv-fields').hidden=!ntPrivate; $('#nt-perr').hidden=true; if(ntPrivate) $('#nt-pname').focus()};
 $('#btn-opentable').onclick=()=>{
+  if(session.guest) return;
   const t={id:'mine'+Date.now(),host:myName(),seats:draft.seats,players:[myName()],bots:{},match:draft.match,target:draft.target,play:draft.play,turn:draft.turn,bank:draft.bank,dc:draft.dc};
   if(ntPrivate){
     const name=$('#nt-pname').value.trim(), pass=$('#nt-ppass').value, err=$('#nt-perr');
@@ -1942,7 +1945,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-130449) */
+/* Offline support + automatic updates (build 20261103-130812) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
