@@ -409,7 +409,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <label class="field"><span class="label">Username</span><input id="login-user" type="text" placeholder="Optional for now" maxlength="24"></label>
     <label class="field"><span class="label">Password</span><input id="login-pass" type="password" placeholder="Optional for now" autocomplete="off"></label>
     <button class="btn btn-brass" type="submit" id="btn-login">Log in</button>
-    <p class="fineprint">Prototype: no account needed. Tap Log in to start.</p>
+    <button class="btn btn-ghost" type="button" id="btn-guest">Guest</button>
+    <p class="fineprint">Prototype: no account needed. Guests can play everything but can't change their name or avatar.</p>
   </form>
 </section>
 
@@ -424,7 +425,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <button class="btn btn-ghost" id="btn-rules">How to play</button>
     <button class="btn btn-ghost" id="btn-settings">Settings</button>
   </div>
-  <p class="fineprint">Prototype · Live mode vs. CPU opponents · <button class="linkish" id="btn-logout">Log out</button></p>
+  <p class="fineprint">Prototype · Live mode vs. CPU opponents · <span id="who-line"></span><button class="linkish" id="btn-logout">Log out</button></p>
 </section>
 
 <!-- ============ SETTINGS ============ -->
@@ -864,7 +865,8 @@ $('#btn-clear-stats').onclick=()=>{
 $('#btn-settings').onclick=()=>{syncSettings();renderProfile();show('settings')};
 $('#settings-back').onclick=()=>show('menu');
 syncSettings();
-$('#login-form').addEventListener('submit',e=>{e.preventDefault(); $('#login-pass').value=''; show('menu')});
+$('#login-form').addEventListener('submit',e=>{e.preventDefault(); $('#login-pass').value=''; startSession(false); show('menu')});
+$('#btn-guest').onclick=()=>{$('#login-pass').value=''; startSession(true); show('menu')};
 $('#btn-logout').onclick=()=>show('login');
 $('#btn-lobby').onclick=()=>openLobby();
 $('#btn-create').onclick=()=>{renderSetup();show('setup')};
@@ -1559,13 +1561,21 @@ const AV_ANIMALS=['🐸','🐧','🦆','🐙','🦊','🐻','🐼','🐨','🐷'
 const PF_ADJ=['Lucky','Sneaky','Brave','Jolly','Quiet','Swift','Clever','Bold','Sly','Mighty','Cosmic','Rusty','Velvet','Silver','Wild','Dapper'];
 const PF_NOUN=['Otter','Badger','Falcon','Moose','Panda','Raven','Gecko','Bison','Heron','Walrus','Lynx','Puffin','Yak','Ferret','Marmot','Newt'];
 const genName=()=>`${pickOf(PF_ADJ)}${pickOf(PF_NOUN)}${10+rngInt(990)}`;
-const profile=Object.assign({name:'',color:AV_COLORS[0],animal:null},store.get('thirteen.profile',{}));
-if(!profile.name){profile.name=genName(); store.set('thirteen.profile',profile)}
+/* account = your saved profile (logged in). Guests get a temporary profile each visit that can't be changed. */
+const account=Object.assign({name:'',color:AV_COLORS[0],animal:null},store.get('thirteen.profile',{}));
+if(!account.name){account.name=genName(); store.set('thirteen.profile',account)}
+let profile=account;
 let session={guest:false};
+function startSession(guest){
+  session.guest=guest;
+  profile=guest?{name:`Guest${1000+rngInt(9000)}`,color:'#8a958a',animal:null}:account;
+  $('#who-line').textContent=guest?`Playing as ${profile.name} (guest) · `:'';
+  $('#btn-logout').textContent=guest?'Exit guest':'Log out';
+}
 function avatarHTML(size,p=profile){
   return `<span class="av" style="width:${size}px;height:${size}px;background:${p.color};font-size:${Math.round(size*(p.animal?.58:.5))}px">${p.animal||esc((p.name||'?')[0].toUpperCase())}</span>`;
 }
-function saveProfile(){store.set('thirteen.profile',profile); renderProfile()}
+function saveProfile(){if(!session.guest) store.set('thirteen.profile',account); renderProfile()}
 function renderProfile(){
   $('#pr-mini').innerHTML=avatarHTML(42); $('#pr-mini-name').textContent=profile.name;
   $('#pf-avatar').innerHTML=avatarHTML(104); $('#pf-name').textContent=profile.name;
@@ -1574,8 +1584,8 @@ function renderProfile(){
   $('#pf-colors').innerHTML=AV_COLORS.map(c=>`<button class="swatch" data-c="${c}" style="background:${c}" aria-label="Color ${c}" aria-pressed="${profile.color===c}"></button>`).join('');
   $('#pf-animals').innerHTML=`<button class="swatch none" data-a="" aria-label="No animal, show initial" aria-pressed="${!profile.animal}">${esc(profile.name[0].toUpperCase())}</button>`+
     AV_ANIMALS.map(a=>`<button class="swatch" data-a="${a}" aria-pressed="${profile.animal===a}">${a}</button>`).join('');
-  document.querySelectorAll('#pf-colors .swatch').forEach(b=>b.onclick=()=>{profile.color=b.dataset.c;saveProfile()});
-  document.querySelectorAll('#pf-animals .swatch').forEach(b=>b.onclick=()=>{profile.animal=b.dataset.a||null;saveProfile()});
+  document.querySelectorAll('#pf-colors .swatch').forEach(b=>b.onclick=()=>{if(session.guest)return; profile.color=b.dataset.c;saveProfile()});
+  document.querySelectorAll('#pf-animals .swatch').forEach(b=>b.onclick=()=>{if(session.guest)return; profile.animal=b.dataset.a||null;saveProfile()});
 }
 $('#btn-profile').onclick=()=>{renderProfile();pfTab('me');show('profile')};
 function pfTab(v){
@@ -1624,7 +1634,7 @@ $('#pf-name-form').onsubmit=e=>{
   const v=$('#pf-name-input').value.trim().replace(/\s+/g,' '), err=$('#pf-err');
   if(v.length<3){err.textContent='Use at least 3 characters.';err.hidden=false;return}
   if(!/^[A-Za-z0-9 _.-]+$/.test(v)){err.textContent='Use letters, numbers, spaces, dots, dashes or underscores.';err.hidden=false;return}
-  profile.name=v; saveProfile(); nameEdit(false); toast('Display name updated.','info');
+  if(session.guest) return; profile.name=v; saveProfile(); nameEdit(false); toast('Display name updated.','info');
 };
 
 /* ================= Public lobby (prototype simulation) =================
@@ -1932,7 +1942,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-073628) */
+/* Offline support + automatic updates (build 20261103-130449) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
