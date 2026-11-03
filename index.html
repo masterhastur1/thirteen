@@ -390,16 +390,29 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #setup,#settings,#newtable,#lobby,#waiting{max-width:720px}
   #lobby .table-list{flex:none; overflow:visible}
   #lobby .table-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
-  #game{max-width:none; display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,380px); grid-template-rows:auto minmax(0,1fr); grid-template-areas:"table score" "table bar"; gap:8px 14px}
-  #game .table{grid-area:table; min-height:0; border-radius:90px}
-  #game .table::before{border-radius:70px}
-  #game .scorebar{grid-area:score}
-  .score-pop{left:auto; right:0; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
-  #game .mybar{grid-area:bar; justify-content:flex-end}
-  #game .hand{height:122px}
-  .seat.left,.seat.right{top:26%}
+  /* Game: a wide poker table across the whole screen; your hand and controls sit underneath it */
+  #game{max-width:none; display:grid; padding-block:6px; gap:6px 12px;
+    grid-template-columns:minmax(0,1fr) auto; grid-template-rows:44px minmax(0,1fr) 120px;
+    grid-template-areas:"score score" "table table" "hand ctrls"}
+  #game .scorebar{grid-area:score; width:min(520px,56%)}
+  #game .mybar{display:contents}
+  #game .status{position:absolute; top:6px; right:0; width:calc(44% - 18px); height:44px; min-height:0; justify-content:flex-end; text-align:right}
+  #game .status p{font-size:14px}
+  #game .table{grid-area:table; min-height:0; border-radius:999px; border-width:10px}
+  #game .table::before{inset:18px; border-radius:999px}
+  #game .table::after{border-radius:999px}
+  #game .hand{grid-area:hand; height:120px}
+  #game .controls{grid-area:ctrls; grid-template-columns:repeat(2,minmax(108px,auto)); grid-template-rows:1fr 1fr; margin:0; align-self:stretch}
+  #game .controls .btn,#game .controls .ctl{min-height:0}
+  .seat.left,.seat.right{top:50%; transform:translateY(-50%)}
+  .seat.left{left:14px} .seat.right{right:14px}
+  .seat.top{top:8px; width:auto; flex-direction:row; align-items:center; gap:24px}
+  .seat .avatar{flex:none}
+  .pile{top:59%}
+  .rankline{bottom:12px}
+  .score-pop{left:0; right:auto; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
   .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
-  .banner{top:31%}
+  .banner{top:24%}
 }
 @media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
 @media (max-height:640px){.table{min-height:200px} .hand{height:118px}}
@@ -1980,7 +1993,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-132927) */
+/* Offline support + automatic updates (build 20261103-133526) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
