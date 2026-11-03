@@ -392,7 +392,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #lobby .table-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
   /* Game: a wide poker table across the whole screen; your hand and controls sit underneath it */
   #game{max-width:none; display:grid; padding-block:6px; gap:6px 10px;
-    grid-template-columns:64px minmax(0,1fr) 148px; grid-template-rows:44px minmax(0,1fr) 63px 63px;
+    grid-template-columns:64px minmax(0,1fr) 118px; grid-template-rows:44px minmax(0,1fr) 68px 68px;
     grid-template-areas:"score score score" "table table table" "sort hand pass" "bank hand play"}
   #game .scorebar{grid-area:score; width:min(520px,56%)}
   #game .mybar{display:contents}
@@ -401,7 +401,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .table{grid-area:table; min-height:0; border-radius:999px; border-width:10px}
   #game .table::before{inset:18px; border-radius:999px}
   #game .table::after{border-radius:999px}
-  #game .hand{grid-area:hand; height:132px; align-self:end}
+  #game .hand{grid-area:hand; height:142px; align-self:end}
+  #btn-pass,#btn-play{font-size:15px; padding:0 6px; letter-spacing:.04em}
+  #btn-pass{flex-direction:column; gap:0; line-height:1.05}
+  #btn-pass #clock{font-size:13px}
   /* Sort and Bank: half size, stacked to the left of your cards. Pass and Play: stacked on the right. */
   #game .controls{display:contents}
   #btn-sort{grid-area:sort} #btn-bank{grid-area:bank} #btn-pass{grid-area:pass} #btn-play{grid-area:play}
@@ -412,10 +415,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .controls.myturn > *{animation:myturn 1.8s ease-in-out infinite}
   .seat.left,.seat.right{top:50%; transform:translateY(-50%)}
   .seat.left{left:14px} .seat.right{right:14px}
-  .seat.top{top:8px; width:auto; flex-direction:row; align-items:center; gap:24px}
+  .seat.top{top:-6px; width:auto; flex-direction:row; align-items:center; gap:24px}
   .seat .avatar{flex:none}
-  .pile{top:59%}
-  .rankline{bottom:12px}
+  .pile{top:53%}
+  .rankline{bottom:7px}
   .score-pop{left:0; right:auto; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
   .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
   .banner{top:24%}
@@ -1359,7 +1362,7 @@ function handRank(p){
 let L={off:0,step:30,w:58};
 function renderHand(){
   const box=$('#hand'), h=G.dealing?G.hands[0].slice(0,G.shown):G.hands[0], cw=box.clientWidth||340;
-  const w=Math.round(Math.min(80,Math.max(58,cw/5.1),((box.clientHeight||132)-22)/1.4));
+  const w=Math.round(Math.min(88,Math.max(58,cw/5.1),((box.clientHeight||132)-22)/1.4));
   const step=h.length>1?Math.min(w*.72,(cw-w)/(h.length-1)):0;
   const off=Math.max(0,(cw-(w+step*(h.length-1)))/2);
   L={off,step,w};
@@ -1999,7 +2002,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-134237) */
+/* Offline support + automatic updates (build 20261103-141110) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
