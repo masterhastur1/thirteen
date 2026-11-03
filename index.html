@@ -178,7 +178,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .seat .mini.last{box-shadow:0 0 0 2.5px var(--danger), 0 0 10px var(--danger)}
 .seat .mini.gone{opacity:0}
 .nameplate{background:rgba(8,12,9,.82); border:1px solid var(--line); transition:border-color .2s, box-shadow .2s; border-radius:7px; padding:2px 6px; text-align:center; line-height:1.1}
-.nameplate{width:max-content; max-width:110px}
+.nameplate{width:max-content}
 .nameplate b{display:block; font-size:11px; font-weight:600; line-height:1.15; white-space:nowrap}
 .nameplate b span{display:block; overflow:hidden; text-overflow:ellipsis}
 .pass-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:5; font-family:var(--cond); font-weight:700; font-size:22px; letter-spacing:.08em; color:rgba(255,255,255,.92); background:rgba(10,14,11,.55); border:2px solid rgba(255,255,255,.75); border-radius:7px; padding:0 7px; line-height:1.25; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.6); animation:stamp .18s ease-out both}
@@ -187,7 +187,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .seat.top .bubble{top:auto; bottom:-8px; transform:translate(-50%,100%)}
 .bubble.think{background:var(--brass)}
 
-.pile{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none}
+.pile{position:absolute; z-index:4; left:50%; top:50%; transform:translate(-50%,-50%); width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none}
 .pile-cards{position:relative; height:70px}
 .pile-cards .card{--w:50px}
 .pile-cards .card.fresh{animation:land .25s ease-out both}
@@ -1263,12 +1263,12 @@ function seatState(i){
   if(G.action[i]==='pass'||G.action[i]==='auto') return 'passed';
   return '';
 }
-/* Long names go on two lines, split at the space that keeps the lines most even, so the
-   nameplate is only as wide as its longest line (no empty box beside a wrapped name). */
+/* Titled names (Strong and Expert CPUs) go on two lines: the title, then the name.
+   Every other name stays on one line, however long. Nameplates are only as wide as their text. */
+const TITLES=['Grand Duchess','Grand Duke','Sir','Lord','Lady','Dame','Baron','Baroness','Viscount','Viscountess','Earl','Countess','Marquess','Marchioness','Duke','Duchess','Archduke','Archduchess','Prince','Princess','Czar','Tsarina','Warlord','Khan','Overlord','Sovereign'];
 function plateName(name){
-  if(name.length<=12||!name.includes(' ')) return `<span>${esc(name)}</span>`;
-  let best=null; [...name].forEach((ch,i)=>{if(ch===' '){const w=Math.max(i,name.length-i-1); if(!best||w<best.w) best={i,w}}});
-  return `<span>${esc(name.slice(0,best.i))}</span><span>${esc(name.slice(best.i+1))}</span>`;
+  const t=TITLES.find(t=>name.startsWith(t+' '));
+  return t?`<span>${esc(t)}</span><span>${esc(name.slice(t.length+1))}</span>`:`<span>${esc(name)}</span>`;
 }
 function renderSeats(){
   for(let i=1;i<M.n;i++){
@@ -1961,7 +1961,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-131728) */
+/* Offline support + automatic updates (build 20261103-132117) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
