@@ -1,5 +1,5 @@
 /* Thirteen service worker: the app works offline, and each new build replaces the old cache. */
-const VERSION='20261103-131227';
+const VERSION='20261103-131728';
 const CACHE='thirteen-'+VERSION;
 const CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png','maskable-512.png','apple-touch-icon.png',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];
