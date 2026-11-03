@@ -391,9 +391,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #lobby .table-list{flex:none; overflow:visible}
   #lobby .table-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
   /* Game: a wide poker table across the whole screen; your hand and controls sit underneath it */
-  #game{max-width:none; display:grid; padding-block:6px; gap:6px 12px;
-    grid-template-columns:minmax(0,1fr) auto; grid-template-rows:44px minmax(0,1fr) 120px;
-    grid-template-areas:"score score" "table table" "hand ctrls"}
+  #game{max-width:none; display:grid; padding-block:6px; gap:6px 10px;
+    grid-template-columns:64px minmax(0,1fr) 168px; grid-template-rows:44px minmax(0,1fr) 57px 57px;
+    grid-template-areas:"score score score" "table table table" "sort hand pass" "bank hand play"}
   #game .scorebar{grid-area:score; width:min(520px,56%)}
   #game .mybar{display:contents}
   #game .status{position:absolute; top:6px; right:0; width:calc(44% - 18px); height:44px; min-height:0; justify-content:flex-end; text-align:right}
@@ -401,9 +401,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .table{grid-area:table; min-height:0; border-radius:999px; border-width:10px}
   #game .table::before{inset:18px; border-radius:999px}
   #game .table::after{border-radius:999px}
-  #game .hand{grid-area:hand; height:120px}
-  #game .controls{grid-area:ctrls; grid-template-columns:repeat(2,minmax(108px,auto)); grid-template-rows:1fr 1fr; margin:0; align-self:stretch}
+  #game .hand{grid-area:hand; height:120px; align-self:end}
+  /* Sort and Bank: half size, stacked to the left of your cards. Pass and Play: stacked on the right. */
+  #game .controls{display:contents}
+  #btn-sort{grid-area:sort} #btn-bank{grid-area:bank} #btn-pass{grid-area:pass} #btn-play{grid-area:play}
   #game .controls .btn,#game .controls .ctl{min-height:0}
+  #btn-sort,#btn-bank{padding:0 4px; border-radius:10px}
+  #btn-sort small,#btn-bank small{font-size:9px; letter-spacing:.08em}
+  #btn-sort b,#btn-bank b{font-size:14px}
+  #game .controls.myturn > *{animation:myturn 1.8s ease-in-out infinite}
   .seat.left,.seat.right{top:50%; transform:translateY(-50%)}
   .seat.left{left:14px} .seat.right{right:14px}
   .seat.top{top:8px; width:auto; flex-direction:row; align-items:center; gap:24px}
@@ -1993,7 +1999,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-133526) */
+/* Offline support + automatic updates (build 20261103-133901) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
