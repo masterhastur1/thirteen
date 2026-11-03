@@ -858,7 +858,7 @@ $('#btn-clear-hist').onclick=()=>{
 };
 $('#btn-clear-stats').onclick=()=>{
   const b=$('#btn-clear-stats');
-  if(b.dataset.arm){store.set('thirteen.stats',blankStats());delete b.dataset.arm;b.textContent='Reset stats';toast('Statistics reset.','info');return}
+  if(b.dataset.arm){saveStats(blankStats());delete b.dataset.arm;b.textContent='Reset stats';toast('Statistics reset.','info');return}
   b.dataset.arm='1'; b.textContent='Tap again to reset';
   setTimeout(()=>{if(b.dataset.arm){delete b.dataset.arm;b.textContent='Reset stats'}},4000);
 };
@@ -1568,6 +1568,7 @@ let profile=account;
 let session={guest:false};
 function startSession(guest){
   session.guest=guest;
+  if(guest) guestStats=null; // every guest visit starts with a clean record
   profile=guest?{name:`Guest${1000+rngInt(9000)}`,color:'#8a958a',animal:null}:account;
   $('#who-line').textContent=guest?`Playing as ${profile.name} (guest) · `:'';
   $('#btn-logout').textContent=guest?'Exit guest':'Log out';
@@ -1598,14 +1599,20 @@ $('#pf-tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{nameEdit(fals
    One entry per game (deal). Games where every opponent is a CPU go under "Against CPUs"; games where every
    opponent is a real player go under "Against players"; mixed tables aren't counted. */
 const blankStats=()=>({cpu:{2:{p:0,w:0,t:0},3:{p:0,w:0,t:0},4:{p:0,w:0,t:0}},human:{2:{p:0,w:0,t:0},3:{p:0,w:0,t:0},4:{p:0,w:0,t:0}}});
-function loadStats(){const s=store.get('thirteen.stats',null);return s&&s.cpu&&s.human?s:blankStats()}
+/* Logged-in stats are kept on the device. Guest stats live only for that guest visit and start fresh each time. */
+let guestStats=null;
+function loadStats(){
+  if(session.guest) return guestStats||(guestStats=blankStats());
+  const s=store.get('thirteen.stats',null); return s&&s.cpu&&s.human?s:blankStats();
+}
+function saveStats(s){ if(session.guest) guestStats=s; else store.set('thirteen.stats',s) }
 /* result: 'w' you went out first, 't' you also emptied your hand during the final lap, 'l' anything else */
 function recordStat(result){
   const opp=M.players.slice(1); if(!opp.length) return;
   const bucket=opp.every(p=>p.cpu)?'cpu':opp.every(p=>!p.cpu)?'human':null;
   if(!bucket) return;
   const s=loadStats(), row=s[bucket][M.n]; if(!row) return;
-  row.p++; if(result==='w') row.w++; if(result==='t') row.t=(row.t||0)+1; store.set('thirteen.stats',s);
+  row.p++; if(result==='w') row.w++; if(result==='t') row.t=(row.t||0)+1; saveStats(s);
 }
 function statRows(b,emptyMsg){
   const rows=[2,3,4].map(n=>({n,t:0,...b[n]})), tot=rows.reduce((a,r)=>({p:a.p+r.p,w:a.w+r.w,t:a.t+(r.t||0)}),{p:0,w:0,t:0});
@@ -1945,7 +1952,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-130812) */
+/* Offline support + automatic updates (build 20261103-131227) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
