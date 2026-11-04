@@ -424,7 +424,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .controls > *{position:absolute; z-index:3}
   /* Sort alone in the bottom-left corner; the time bank moves up beside Auto pass */
   #btn-sort{width:55px; height:52px; left:-12px; bottom:4px; padding:0 2px; border-radius:10px}
-  #btn-bank{top:4px; right:76px; height:30px; width:auto; flex-direction:row; gap:7px; padding:0 11px; border-radius:9px}
+  #btn-bank{top:4px; right:86px; height:30px; width:auto; flex-direction:row; gap:7px; padding:0 11px; border-radius:9px}
   #btn-pass,#btn-play{width:100px; right:-12px}
   #btn-play{bottom:4px} #btn-pass{bottom:61px}
   #btn-sort small{font-size:9px; letter-spacing:.06em}
@@ -438,7 +438,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   .seat.top{top:8px; left:31%; width:auto; flex-direction:row; align-items:center; gap:24px}
   .seat .avatar{flex:none}
   .pile{top:30%}
-  .rankline{bottom:auto; top:calc(30% + 96px)}
+  .rankline{bottom:auto; top:calc(30% + 104px)}
+  /* 4 players: far-left seat a little lower, top seat up and to the left, so the table cards have room */
+  .table[data-n="4"] .seat.left{top:33%}
+  .table[data-n="4"] .seat.top{top:2px; left:21%}
   .score-pop{left:0; right:auto; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
   .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
   .banner{top:24%}
@@ -1287,7 +1290,7 @@ function expertDecide(i,plays,hand,T){
 
 /* ================= Rendering ================= */
 function buildSeats(){
-  const table=$('#table'); table.querySelectorAll('.seat,.setaside,.banner').forEach(e=>e.remove());
+  const table=$('#table'); table.dataset.n=M.n; table.querySelectorAll('.seat,.setaside,.banner').forEach(e=>e.remove());
   SEATS[M.n].forEach((pos,i)=>{
     if(i===0) return;
     const p=M.players[i], d=document.createElement('div');
@@ -1346,7 +1349,7 @@ function renderPile(){
   const wide=matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
   const sig=[t?t.cards.map(c=>c.id).join('-'):'x',G.prev?G.prev.cards.map(c=>c.id).join('-'):'x',G.opening,!!G.openPreview,wide].join('|');
   if(pile.dataset.sig===sig) return; pile.dataset.sig=sig;
-  const w=wide?62:50, H=Math.round(w*1.4), lift=wide?42:36; // bigger table cards sideways
+  const w=wide?68:50, H=Math.round(w*1.4), lift=wide?46:36; // bigger table cards sideways
   const row=(cards,top,cls,boxW)=>{const st=cards.length>1?Math.round(w*.52):0, cw=w+st*(cards.length-1), x0=(boxW-cw)/2;
     return cards.map((c,k)=>cardHTML(c,w,x0+k*st,top,cls)).join('')};
   const widthOf=cards=>w+(cards.length>1?Math.round(w*.52):0)*(cards.length-1);
@@ -2023,7 +2026,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-132704) */
+/* Offline support + automatic updates (build 20261104-134454) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
