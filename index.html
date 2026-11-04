@@ -1801,7 +1801,7 @@ function renderLobby(){
     return `<button class="tl-item${full?' full':''}" data-id="${t.id}" ${full?'disabled':''}><b>${esc(t.host)}'s table</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
       <span class="meta"><span class="pill ${t.play}">${t.play}</span>${t.bots&&t.bots[t.host]?`<span class="pill cpu">CPU · ${LVL[t.bots[t.host]]}</span>`:''}${matchLabel(t)}${t.play==='live'?` · ${t.turn}s turns · ${fmt(t.bank)} bank`:' · 1 day per move'}</span></button>`}).join('')
-    :'<p class="hint" style="text-align:center;padding:20px 0">No tables match. Try another filter or create one.</p>';
+    :`<p class="hint" style="text-align:center;padding:20px 0">${NET.ready&&!LB.tables.length?'No open tables right now. Create one, or join a private game.':'No tables match. Try another filter or create one.'}</p>`;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
 }
 $('#lb-filter').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.filter=b.dataset.v;renderLobby()});
@@ -1870,12 +1870,13 @@ $('#lb-private').onclick=()=>{
 function enterWaiting(t,isHost){
   leaveWaiting(true);
   const me=myName();
-  WR={t:{...t,bots:{...(t.bots||{})},players:isHost?[me]:[...t.players.filter(n=>n!==me),me]},src:t.id,isHost,me,count:null,timers:[]};
+  // joining a CPU-hosted offline table gives you the host controls, since a CPU can't add seats or start
+  WR={t:{...t,bots:{...(t.bots||{})},players:isHost?[me]:[...t.players.filter(n=>n!==me),me]},src:t.id,isHost:isHost||!!(t.bots&&t.bots[t.host]),me,count:null,timers:[]};
   $('#wr-title').textContent=t.private?`${t.name}`:isHost?'Your table':`${t.host}’s table`;
   $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">
     ${t.private?'<span>Lobby <b>Private</b></span>':''}<span>Mode <b>${t.play==='live'?'Live':'Online'}</b></span><span>Scoring <b>${matchLabel(t)}</b></span>
     ${t.play==='live'?`<span>Turn <b>${t.turn}s</b></span><span>Bank <b>${fmt(t.bank)}</b></span><span>Disconnect <b>${fmt(t.dc)}</b></span>`:'<span>Moves <b>1 day each</b></span>'}</div>`;
-  show('waiting'); renderWaiting(); checkFull(); scheduleJoin();
+  show('waiting'); renderWaiting(); checkFull(); // no automatic joiners: CPUs are added by hand
 }
 function scheduleJoin(){
   if(!WR) return;
@@ -2320,7 +2321,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-162352) */
+/* Offline support + automatic updates (build 20261104-163930) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
