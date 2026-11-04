@@ -346,6 +346,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .tl-item .seats{grid-row:1 / span 2; grid-column:2; text-align:right; font-family:var(--cond); font-size:20px; font-variant-numeric:tabular-nums}
 .tl-item .seats small{display:block; font-size:11px; letter-spacing:.1em; color:var(--muted)}
 .tl-item.full{opacity:.5}
+.tl-item .inprog{grid-column:1; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#f0b85a}
+.wait-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:6; font-family:var(--cond); font-weight:700; font-size:14px; letter-spacing:.04em; color:#fff; background:rgba(10,14,11,.62); border:2px solid rgba(255,255,255,.85); border-radius:6px; padding:0 4px; line-height:1.25; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.6); animation:stamp .18s ease-out both}
+.seat.waiting .avatar{filter:saturate(.55) brightness(.85)}
+.seat.waiting .mini{display:none}
+#game.spectating #controls{opacity:.4; pointer-events:none}
 .pill{display:inline-block; font-family:var(--cond); font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:1px 6px; border-radius:5px; border:1px solid var(--line); color:var(--cream); margin-right:4px}
 .pill.live{border-color:var(--ok); color:var(--ok)}
 .pill.cpu{border-color:var(--brass); color:var(--brass)}
@@ -1319,12 +1324,13 @@ function buildSeats(){
     if(i===0) return;
     const p=M.players[i], d=document.createElement('div');
     d.className='seat '+pos; d.id='seat'+i;
-    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div></div>
+    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>WAITING</div></div>
       <div class="nameplate"><b>${plateName(p.name)}</b></div>`;
     table.appendChild(d);
   });
 }
 function seatState(i){
+  if(M.players[i]&&M.players[i].waiting) return 'waiting';
   if(G.dealing) return '';
   if(G.hands[i]&&G.hands[i].length===0&&(G.finalLap||G.lapDone||G.over)) return 'out';
   if(G.over) return '';
@@ -1362,8 +1368,9 @@ function renderSeats(){
   for(let i=1;i<M.n;i++){
     const el=$('#seat'+i); if(!el) continue;
     const st=seatState(i);
-    ['turn','ontop','passed','out'].forEach(c=>el.classList.toggle(c,st===c));
+    ['turn','ontop','passed','out','waiting'].forEach(c=>el.classList.toggle(c,st===c));
     el.querySelector('.pass-stamp').hidden=st!=='passed';
+    el.querySelector('.wait-stamp').hidden=st!=='waiting';
     const mini=el.querySelector('.mini'), len=G.dealing?G.got[i]:G.hands[i].length;
     mini.classList.toggle('last',!G.dealing&&len===1); mini.classList.toggle('gone',len===0);
   }
@@ -1420,6 +1427,7 @@ function renderStatus(){
   const me=G.cur===0&&!G.over&&!G.openPreview&&!G.dealing, st=$('#status');
   let msg='';
   if(G.over) msg='';
+  else if(G.spectator) msg='<b>You\'re in.</b> You\'ll be dealt in when the next game starts.';
   else if(G.lapDone) msg='<b>Final lap complete.</b> Counting the cards…';
   else if(G.dealing) msg='Dealing…'+(G.commit?` <span style="color:var(--muted);font-size:12px">Deal ID ${G.commit.hash.slice(0,8)}</span>`:'');
   else if(G.openPreview) msg=`${G.cur===0?'You hold':esc(M.players[G.cur].name)+' holds'} the lowest club, the <b>${cname(G.openCard)}</b>. It plays automatically.`;
@@ -1706,10 +1714,10 @@ function loadStats(){
 function saveStats(s){ if(session.guest) guestStats=s; else store.set('thirteen.stats',s) }
 /* result: 'w' you went out first, 't' you also emptied your hand during the final lap, 'l' anything else */
 function recordStat(result){
-  const opp=M.players.slice(1); if(!opp.length) return;
+  const opp=M.players.slice(1).filter(p=>!p.waiting); if(!opp.length) return;
   const bucket=opp.every(p=>p.cpu)?'cpu':opp.every(p=>!p.cpu)?'human':null;
   if(!bucket) return;
-  const s=loadStats(), row=s[bucket][M.n]; if(!row) return;
+  const s=loadStats(), row=s[bucket][opp.length+1]; if(!row) return;
   row.p++; if(result==='w') row.w++; if(result==='t') row.t=(row.t||0)+1; saveStats(s);
 }
 function statRows(b,emptyMsg){
@@ -1800,7 +1808,7 @@ function renderLobby(){
   $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
     return `<button class="tl-item${full?' full':''}" data-id="${t.id}" ${full?'disabled':''}><b>${esc(t.host)}'s table</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
-      <span class="meta"><span class="pill ${t.play}">${t.play}</span>${t.bots&&t.bots[t.host]?`<span class="pill cpu">CPU · ${LVL[t.bots[t.host]]}</span>`:''}${matchLabel(t)}${t.play==='live'?` · ${t.turn}s turns · ${fmt(t.bank)} bank`:' · 1 day per move'}</span></button>`}).join('')
+      <span class="meta"><span class="pill ${t.play}">${t.play}</span>${t.bots&&t.bots[t.host]?`<span class="pill cpu">CPU · ${LVL[t.bots[t.host]]}</span>`:''}${matchLabel(t)}${t.play==='live'?` · ${t.turn}s turns · ${fmt(t.bank)} bank`:' · 1 day per move'}</span>${t.inProgress?'<span class="inprog">In progress · join for the next game</span>':''}</button>`}).join('')
     :`<p class="hint" style="text-align:center;padding:20px 0">${NET.ready&&!LB.tables.length?'No open tables right now. Create one, or join a private game.':'No tables match. Try another filter or create one.'}</p>`;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
 }
@@ -2097,7 +2105,7 @@ renderLobby=function(){
   if(!NET.ready) return _renderLobby();
   // shape server listings like the offline ones so the same list, filter and sort code draws them
   LB.tables=NET.lobby.map((t,k)=>({id:t.id,online:true,cpuRoom:t.cpuRoom,host:t.host,seats:t.seats,players:[t.host,...Array(Math.max(0,t.filled-1)).fill('')],
-    bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
+    inProgress:!!t.inProgress,bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
   const save=window.ensureCpuRooms; ensureCpuRooms=()=>{}; _renderLobby(); ensureCpuRooms=save;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>NET.send({t:'join',id:b.dataset.id}));
 };
@@ -2166,34 +2174,41 @@ const idCard=id=>mk(id>>2,id&3);
 const pubPlay=p=>p&&{...classify(p.cards.map(idCard)),by:p.by};
 let netTick=null;
 function applyView(v){
-  const n=v.seats.length, rot=j=>(j-v.you+n)%n, t=NET.table, fresh=!G||!G.online||G.commitHash!==v.commit;
+  const n=v.seats.length, t=NET.table, spectator=v.you<0, fresh=!G||!G.online||G.commitHash!==v.commit||G.spectator!==spectator;
+  // players waiting for the next deal sit after the dealt-in seats (up to 4 around the table)
+  const wl=(v.waiting||[]).slice(0,Math.max(0,4-n)), total=n+wl.length;
+  const base=spectator?n+Math.min(v.waitIdx||0,wl.length-1):v.you;
   // seats are reordered so you are always seat 0, as in offline play
-  const order=[...Array(n).keys()].map(k=>(k+v.you)%n);
-  M={n,online:true,table:true,players:order.map((j,k)=>{const s=v.seats[j]; return {name:k===0?'You':s.name,cpu:s.cpu,level:s.level,connected:s.connected,color:COLORS[k],tag:s.cpu?'CPU':'PLAYER'}}),
+  const order=[...Array(total).keys()].map(k=>(base+k)%total), rot=j=>j<0?-1:order.indexOf(j);
+  const slot=j=>j<n?v.seats[j]:{name:wl[j-n].name,avatar:wl[j-n].avatar,cpu:false,connected:true,waiting:true,action:null};
+  M={n:total,online:true,table:true,players:order.map((j,k)=>{const s=slot(j); return {name:k===0?'You':s.name,cpu:s.cpu,level:s.level,connected:s.connected,waiting:!!s.waiting,color:COLORS[k],tag:s.cpu?'CPU':'PLAYER'}}),
     play:v.rules.play,match:t?t.rules.match:'endless',target:t?t.rules.target:25,bankOn:v.bankOn,turnTime:v.rules.turn,bankTime:v.rules.bank,
-    bal:t?order.map(a=>order.map(b=>t.ledger[a]?t.ledger[a][b]||0:0)):Array.from({length:n},()=>Array(n).fill(0))};
+    bal:order.map(a=>order.map(b=>t&&a<n&&b<n&&t.ledger[a]?t.ledger[a][b]||0:0))};
   const prevHand=fresh?[]:G.hands[0], ids=new Set(v.hand);
   const hand=prevHand.filter(c=>ids.has(c.id)); v.hand.forEach(id=>{ if(!hand.some(c=>c.id===id)) hand.push(idCard(id)); });
   [...sel].forEach(id=>{ if(!ids.has(id)) sel.delete(id); });
   const keep=fresh?{autoPass:false,confirmSpade:false}:{autoPass:G.autoPass,confirmSpade:G.confirmSpade};
-  G={online:true,commitHash:v.commit,commit:{hash:v.commit},...keep,
-    hands:order.map((j,k)=>k===0?hand:Array(v.seats[j].out?0:v.seats[j].oneCard?1:2).fill(null)),
+  G={online:true,spectator,commitHash:v.commit,commit:{hash:v.commit},...keep,
+    hands:order.map((j,k)=>k===0?hand:j>=n?[]:Array(v.seats[j].out?0:v.seats[j].oneCard?1:2).fill(null)),
     cur:v.cur<0?-1:rot(v.cur),table:pubPlay(v.table),prev:pubPlay(v.prev),opening:v.opening,openCard:G&&!fresh&&G.openCard||null,
-    openPreview:v.phase==='opening',dealing:v.phase==='dealing',shown:hand.length,got:Array(n).fill(13),
-    finalLap:v.finalLap?{}:null,lapDone:v.lapDone,over:v.phase==='over',action:order.map(j=>v.seats[j].action),
-    bank:Array(n).fill(v.bank/1000),turnLeft:0,bankActive:false,log:[],clock:v.clock,leftover:0};
+    openPreview:v.phase==='opening',dealing:v.phase==='dealing',shown:hand.length,got:order.map(j=>j<n?13:0),
+    finalLap:v.finalLap?{}:null,lapDone:v.lapDone,over:v.phase==='over',action:order.map(j=>j<n?v.seats[j].action:null),
+    bank:Array(total).fill(v.bank/1000),turnLeft:0,bankActive:false,log:[],clock:v.clock,leftover:0};
   if(G.table) G.table.by=rot(G.table.by); if(G.prev) G.prev.by=rot(G.prev.by);
   if(v.openCard!=null) G.openCard=idCard(v.openCard);
   if(!G.openCard&&v.opening) G.openCard=hand.filter(c=>c.s===0).sort((a,b)=>a.id-b.id)[0]||null;
   if(fresh){ sortMode=null; $('#sort-mode').textContent='None'; setAutoPass(false); }
-  if($('#game').hidden){ $('#overlay').hidden=true; show('game'); }
-  if(fresh||!$('#table').querySelector('.seat')) buildSeats();
+  if($('#game').hidden){ if(!(t&&t.state==='summary')) $('#overlay').hidden=true; show('game'); }
+  const seatSig=order.map(j=>slot(j).name+(j>=n?'*':'')).join('|');
+  if(fresh||!$('#table').querySelector('.seat')||applyView.sig!==seatSig) buildSeats();
+  applyView.sig=seatSig;
+  $('#game').classList.toggle('spectating',spectator);
   clockTick(); render();
   if(fresh&&G.dealing) banner('Dealing…',1500);
   if(G.openPreview&&fresh===false&&!G._opened){ G._opened=true; }
   // auto pass: your turn comes round and you've ticked it
   if(G.autoPass&&G.cur===0&&G.table&&!G.over&&!G.opening) setTimeout(()=>{ if(G&&G.online&&G.autoPass&&G.cur===0&&G.table) NET.send({t:'pass'}); },500);
-  if(G.over&&v.result) recordNetGame(v);
+  if(G.over&&v.result&&!spectator) recordNetGame(v);
   clearInterval(netTick); netTick=setInterval(clockTick,250);
 }
 function clockTick(){
@@ -2211,7 +2226,7 @@ function recordNetGame(v){
   const n=v.seats.length, rot=j=>(j-v.you+n)%n, me=v.you;
   recordStat(r.type==='win'&&r.winner===me?'w':r.type==='win'&&r.counts[me]===0?'t':'l');
   try{
-    const players=M.players.map(p=>({name:p.name,color:p.color,level:p.level||null}));
+    const players=M.players.filter(p=>!p.waiting).map(p=>({name:p.name,color:p.color,level:p.level||null}));
     const start=r.proof.deck.slice(me*13,me*13+13).sort((a,b)=>a-b);
     const log=(v.log||[]).map(e=>({...e,p:rot(e.p)}));
     const counts=v.seats.map((_,k)=>r.counts[(k+me)%n]);
@@ -2224,7 +2239,7 @@ function recordNetGame(v){
 }
 let netSumT=null;
 function showNetSummary(t){
-  const s=t.summary, r=s.result, n=t.seats.length, me=t.you, order=[...Array(n).keys()].map(k=>(k+me)%n);
+  const s=t.summary, r=s.result, n=t.seats.length, me=t.you, order=[...Array(n).keys()].map(k=>(k+Math.max(0,me))%n);
   const name=j=>j===me?'You':t.seats[j].name;
   const head=r.type==='win'?(r.winner===me?'You went out!':`${t.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${t.seats[r.loser].name} is stuck with the 2♠`);
   const rows=order.map((j,k)=>`<tr><td><span class="who"><span class="dot" style="background:${COLORS[k]}"></span>${esc(name(j))}</span></td><td>${r.counts[j]}</td><td class="${s.delta[j]>0?'pos':s.delta[j]<0?'neg':''}">${signed(s.delta[j])||'0'}</td><td>${t.rules.match==='casual'?'—':signed(s.net[j])||'0'}</td></tr>`).join('');
@@ -2235,8 +2250,9 @@ function showNetSummary(t){
     <h3>${champ?(s.champ===me?'You win the match!':esc(t.seats[s.champ].name)+' wins the match'):esc(head)}</h3>
     ${r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
     <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
+    ${me<0?'<p class="hint" style="text-align:center">You\'re waiting at this table. You\'ll be dealt in when the next game starts.</p>':''}
     <p class="brk-status" id="ns-status"></p>
-    ${champ?'':`<div class="brk-row">
+    ${champ||me<0?'':`<div class="brk-row">
       <button class="btn btn-ghost" id="ns-pause" ${!t.isHost&&!two?'disabled':''}>${s.hostPause?'Unpause':'Pause'}</button>
       <button class="btn btn-brass" id="ns-ready" ${breakOn&&!s.hostPause?'':'hidden'} ${s.isReady?'disabled':''}>Ready ${s.ready}/${n}</button>
       ${n>2&&!breakOn&&!s.hostPause?`<label class="vote"><input type="checkbox" id="ns-vote" ${s.voted?'checked':''}><span>Vote pause</span><b>${s.votes}/${n}</b></label>`:''}
@@ -2324,7 +2340,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-174303) */
+/* Offline support + automatic updates (build 20261104-175501) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
