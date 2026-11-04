@@ -394,9 +394,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game{max-width:none; display:grid; padding-block:6px; gap:6px 10px;
     grid-template-columns:64px minmax(0,1fr) 118px; grid-template-rows:44px minmax(0,1fr) 68px 68px;
     grid-template-areas:"score score score" "table table table" "sort hand pass" "bank hand play"}
-  #game .scorebar{grid-area:score; width:min(520px,56%)}
+  /* top row: menu and a half-width Scoreboard on the left, status in the middle, Auto pass in the top-right corner */
+  #game .scorebar{grid-area:score; width:100%}
+  #game .score-btn{flex:none; width:180px}
+  #game .autopass{margin-left:auto}
   #game .mybar{display:contents}
-  #game .status{position:absolute; top:6px; right:0; width:calc(44% - 18px); height:44px; min-height:0; justify-content:flex-end; text-align:right}
+  #game .status{position:absolute; top:6px; left:50%; transform:translateX(-50%); width:min(40%,420px); height:44px; min-height:0; justify-content:center; text-align:center; pointer-events:none}
   #game .status p{font-size:14px}
   #game .table{grid-area:table; min-height:0; border-radius:999px; border-width:10px}
   #game .table::before{inset:18px; border-radius:999px}
@@ -2002,7 +2005,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261103-141110) */
+/* Offline support + automatic updates (build 20261104-063202) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
