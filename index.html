@@ -440,8 +440,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   .pile{top:30%}
   .rankline{bottom:auto; top:calc(30% + 104px)}
   /* 4 players: far-left seat a little lower, top seat up and to the left, so the table cards have room */
-  .table[data-n="4"] .seat.left{top:33%}
-  .table[data-n="4"] .seat.top{top:2px; left:21%}
+  .table[data-n="4"] .seat.left{top:41%; left:10px}
+  .table[data-n="4"] .seat.top{top:12px; left:14%}
   .score-pop{left:0; right:auto; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
   .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
   .banner{top:24%}
@@ -2026,7 +2026,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-135609) */
+/* Offline support + automatic updates (build 20261104-141846) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
