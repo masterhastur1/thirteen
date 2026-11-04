@@ -411,7 +411,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .table{min-height:0; border-radius:120px; border-width:10px}
   #game .table::before{inset:16px; border-radius:104px}
   #game .table::after{border-radius:110px}
-  #game .hand{grid-area:hand; height:130px; align-self:end; z-index:2}
+  #game .hand{grid-area:hand; height:130px; align-self:end; z-index:2; transform:translateY(7px)}
   #btn-pass,#btn-play{font-size:13px; padding:0 5px; letter-spacing:.04em}
   #btn-pass{flex-direction:column; gap:0; line-height:1.05}
   #btn-pass #clock{font-size:11px}
@@ -2020,7 +2020,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-123536) */
+/* Offline support + automatic updates (build 20261104-130150) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
