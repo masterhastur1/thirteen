@@ -95,6 +95,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .field input::placeholder{color:#6f7d70}
 .field input:focus{outline:2px solid var(--brass); outline-offset:1px}
 .login-form .fineprint{text-align:center; margin:0}
+.login-links{margin:2px 0 0; text-align:center; color:var(--muted); font-size:13px; line-height:2}
+.google-btn{gap:10px}
+.g-mark{width:22px; height:22px; border-radius:50%; background:var(--cream); color:#4a6ee0; display:grid; place-items:center; font-family:var(--body); font-weight:700; font-size:14px}
+.net-pill{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted)}
+.net-pill i{width:8px; height:8px; border-radius:50%; background:#6b756b}
+.net-pill.on i{background:var(--ok)} .net-pill.wait i{background:var(--brass)}
 .linkish{color:var(--brass); text-decoration:underline; font-size:13px; padding:0}
 
 /* ---------- Setup ---------- */
@@ -454,12 +460,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 <section id="login" class="screen">
   <div class="hero" id="hero-login" aria-hidden="true"></div>
   <div class="wordmark">Thirteen<small>Spades high · 2 to 4 players</small></div>
-  <form class="login-form" id="login-form" autocomplete="off">
-    <label class="field"><span class="label">Username</span><input id="login-user" type="text" placeholder="Optional for now" maxlength="24"></label>
-    <label class="field"><span class="label">Password</span><input id="login-pass" type="password" placeholder="Optional for now" autocomplete="off"></label>
+  <form class="login-form" id="login-form">
+    <label class="field"><span class="label">Email</span><input id="login-user" type="email" autocomplete="email" maxlength="120" placeholder="you@example.com"></label>
+    <label class="field"><span class="label">Password</span><input id="login-pass" type="password" autocomplete="current-password" maxlength="72"></label>
+    <p class="form-err" id="login-err" hidden></p>
     <button class="btn btn-brass" type="submit" id="btn-login">Log in</button>
+    <button class="btn btn-ghost google-btn" type="button" id="btn-google"><span class="g-mark" aria-hidden="true">G</span>Continue with Google</button>
     <button class="btn btn-ghost" type="button" id="btn-guest">Guest</button>
-    <p class="fineprint">Prototype: no account needed. Guests can play everything but can't change their name or avatar.</p>
+    <p class="login-links"><button type="button" class="linkish" id="btn-signup">Create account</button> · <button type="button" class="linkish" id="btn-forgot">Forgot password?</button> · <button type="button" class="linkish" id="btn-offline">Play offline</button></p>
   </form>
 </section>
 
@@ -474,7 +482,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <button class="btn btn-ghost" id="btn-rules">How to play</button>
     <button class="btn btn-ghost" id="btn-settings">Settings</button>
   </div>
-  <p class="fineprint">Prototype · Live mode vs. CPU opponents · <span id="who-line"></span><button class="linkish" id="btn-logout">Log out</button></p>
+  <p class="fineprint"><span class="net-pill" id="net-pill"><i></i><span>Offline</span></span> · <span id="who-line"></span><button class="linkish" id="btn-logout">Log out</button></p>
 </section>
 
 <!-- ============ SETTINGS ============ -->
@@ -580,7 +588,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   </div>
   <div class="table-list" id="table-list"></div>
   <button class="btn btn-brass" id="btn-newtable">Create table</button>
-  <p class="hint" style="text-align:center">Prototype: every other seat is a CPU with its own difficulty level.</p>
+  <p class="hint" style="text-align:center"><span id="lobby-note">Offline: every other seat is a CPU with its own difficulty level.</span></p>
 </section>
 
 <!-- ============ CREATE TABLE ============ -->
@@ -709,6 +717,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 <div id="toast" class="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 /* ================= Card model ================= */
 const SUITS=['♣','♦','♥','♠'], SUITN=['club','diamond','heart','spade'];
@@ -1048,6 +1057,7 @@ function startTurn(){
 function advance(){G.cur=(G.cur+1)%M.n;startTurn()}
 
 function doPlay(i,play){
+  if(G.online){ if(i===0){ NET.send({t:'play',cards:play.cards.map(c=>c.id)}); sel.clear(); G.confirmSpade=false; renderHand(); } return; }
   stopClock();
   const h=G.hands[i], ids=new Set(play.cards.map(c=>c.id));
   G.hands[i]=h.filter(c=>!ids.has(c.id));
@@ -1065,6 +1075,7 @@ function doPlay(i,play){
   advance();
 }
 function doPass(i,auto){
+  if(G.online){ if(i===0){ NET.send({t:'pass'}); G.confirmSpade=false; } return; }
   stopClock();
   if(i===0){G.confirmSpade=false}
   G.action[i]=auto?'auto':'pass'; G.log.push({t:auto?'auto':'pass',p:i});
@@ -1123,6 +1134,7 @@ function timeout(){
 $('#btn-bank').onclick=()=>{
   if(!G||!M) return;
   M.bankOn=!M.bankOn; renderClock();
+  if(G&&G.online) NET.send({t:'bank',on:M.bankOn});
   if(settings.tips) toast(M.bankOn?'Time bank on. It starts after your 30 seconds run out.':'Time bank off. You pass when your 30 seconds run out.','info');
 };
 
@@ -1417,7 +1429,7 @@ function renderStatus(){
     else msg=`Beat <b>${describe(G.table)}</b> or pass.`;
     if(G.finalLap) msg='<b>Final lap.</b> '+(G.table?`Beat ${describe(G.table)} to shed cards, or pass.`:'Play to shed cards.');
   } else {
-    const p=M.players[G.cur]; msg=`${esc(p.name)} is thinking…`;
+    const p=M.players[G.cur]; msg=p&&p.connected===false?`${esc(p.name)} is away. Waiting for them to reconnect…`:`${esc(p.name)} is thinking…`;
     if(G.finalLap) msg='Final lap · '+msg;
   }
   st.innerHTML=msg;
@@ -1600,7 +1612,7 @@ function startBreakControls(){
   },1000);
   draw();
 }
-function leave(){scorePop(false);clearTimers();G=null;$('#overlay').hidden=true;$('#toast').hidden=true;show('menu')}
+function leave(){if(G&&G.online||NET.table){NET.send({t:'leave'});NET.table=null}scorePop(false);clearTimers();G=null;$('#overlay').hidden=true;$('#toast').hidden=true;show('menu')}
 
 /* ================= Sheets: scoreboard, leave, rules ================= */
 function openSheet(html){$('#overlay').innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;$('#overlay').hidden=false}
@@ -2035,10 +2047,280 @@ function buildPDF(h){
   doc.setTextColor(140,140,140); doc.setFontSize(8); doc.text('Generated by the Thirteen prototype',X,770);
   return doc.output('blob');
 }
+
+/* ================= Online play: accounts and the game server =================
+   Sign-in is handled by Supabase (email/password or Google). Games run on the Thirteen server, which deals
+   and referees; this phone only ever receives its own cards. Offline play against CPUs works as before. */
+const ONLINE={server:(()=>{ try{ const q=new URLSearchParams(location.search).get('server'); if(q&&/^wss?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/play$/.test(q)) return q; }catch(e){} return 'wss://thirteen-server-ljxq.onrender.com/play'; })(), // ?server= only accepts a local test server
+  supabaseUrl:'https://vcwimysfnnaelykknbne.supabase.co', supabaseKey:'sb_publishable_qYhdHUDeqGP5HXfEwAbOPA_PlRf8YnT'};
+const sb=(()=>{try{return window.supabase&&window.supabase.createClient(ONLINE.supabaseUrl,ONLINE.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})}catch(e){return null}})();
+const appUrl=()=>location.origin+location.pathname;
+
+const NET={ws:null,ready:false,want:false,token:null,me:null,table:null,view:null,lobby:[],retry:0,offset:0,seen:new Set(),
+  send(o){ if(this.ws&&this.ws.readyState===1) this.ws.send(JSON.stringify(o)); else if(this.want) toast('Not connected to the server yet. Reconnecting…','info'); },
+  status(state,text){ const p=$('#net-pill'); p.className='net-pill'+(state?' '+state:''); p.querySelector('span').textContent=text; const n=$('#lobby-note'); if(n) n.textContent=state==='on'?'Online: real players and CPU seats. Games are dealt and refereed by the server.':state==='wait'?'Connecting to the server… this can take up to a minute the first time.':'Offline: every other seat is a CPU with its own difficulty level.'; },
+  connect(){
+    this.want=true; if(this.ws&&this.ws.readyState<2) return;
+    this.status('wait','Connecting…');
+    let ws; try{ ws=new WebSocket(ONLINE.server); }catch(e){ return this.status('','Offline'); }
+    this.ws=ws;
+    ws.onopen=()=>{ this.retry=0; ws.send(JSON.stringify({t:'hello',token:this.token||undefined,guestId:session.guest?store.get('thirteen.guestId',undefined):undefined,name:profile.name,avatar:{color:profile.color,animal:profile.animal}})); };
+    ws.onmessage=ev=>{ let m; try{m=JSON.parse(ev.data)}catch(e){return} onServer(m); };
+    ws.onclose=()=>{ this.ready=false; this.ws=null;
+      if(!this.want) return this.status('','Offline');
+      this.status('wait','Reconnecting…'); const d=Math.min(15000,1000*2**this.retry++); setTimeout(()=>{ if(this.want) this.connect(); },d); };
+    ws.onerror=()=>{};
+  },
+  disconnect(){ this.want=false; this.ready=false; this.table=null; this.view=null; if(this.ws) try{this.ws.close()}catch(e){} this.ws=null; this.status('','Offline'); }
+};
+
+function onServer(m){
+  switch(m.t){
+    case 'welcome': NET.ready=true; NET.me=m.id; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); break;
+    case 'error': toast(m.msg); break;
+    case 'toast': toast(m.msg,'info'); break;
+    case 'lobby': NET.lobby=m.tables; NET.table=null;
+      if(!$('#waiting').hidden||(!$('#game').hidden&&G&&G.online)){ G=null; $('#overlay').hidden=true; show('lobby'); }
+      if(!$('#lobby').hidden) renderLobby(); break;
+    case 'table': NET.table=m; onTable(m); break;
+    case 'game': NET.view=m; NET.offset=Date.now()-m.now; applyView(m); break;
+  }
+}
+
+/* ----- lobby ----- */
+const _openLobby=openLobby;
+openLobby=function(){ if(NET.ready){ NET.send({t:'lobby'}); renderLobby(); show('lobby'); } else _openLobby(); };
+const _renderLobby=renderLobby;
+renderLobby=function(){
+  if(!NET.ready) return _renderLobby();
+  // shape server listings like the offline ones so the same list, filter and sort code draws them
+  LB.tables=NET.lobby.map((t,k)=>({id:t.id,online:true,cpuRoom:t.cpuRoom,host:t.host,seats:t.seats,players:[t.host,...Array(Math.max(0,t.filled-1)).fill('')],
+    bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
+  const save=window.ensureCpuRooms; ensureCpuRooms=()=>{}; _renderLobby(); ensureCpuRooms=save;
+  document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>NET.send({t:'join',id:b.dataset.id}));
+};
+const _openTable=$('#btn-opentable').onclick;
+$('#btn-opentable').onclick=()=>{
+  if(!NET.ready) return _openTable();
+  if(session.guest) return;
+  const o={t:'create',seats:draft.seats,play:draft.play,match:draft.match,target:draft.target,turn:draft.turn,bank:draft.bank,dc:draft.dc};
+  if(ntPrivate){ const name=$('#nt-pname').value.trim(), pass=$('#nt-ppass').value, err=$('#nt-perr');
+    if(!name){err.textContent='Enter a lobby name.';err.hidden=false;return}
+    if(pass.length<4){err.textContent='Use a password of at least 4 characters.';err.hidden=false;return}
+    o.private={name,pass}; $('#nt-ppass').value=''; }
+  NET.send(o);
+};
+const _privBtn=$('#lb-private').onclick;
+$('#lb-private').onclick=()=>{
+  _privBtn();
+  if(!NET.ready) return;
+  $('#pj-form').onsubmit=e=>{ e.preventDefault(); NET.send({t:'joinPrivate',name:$('#pj-name').value,pass:$('#pj-pass').value}); $('#pj-pass').value=''; closeSheet(); };
+};
+
+/* ----- waiting room ----- */
+let netCountT=null;
+function onTable(t){
+  if(t.state==='waiting'){
+    if(G&&G.online){ G=null; $('#overlay').hidden=true; }
+    renderNetWaiting(t); if($('#waiting').hidden) show('waiting');
+  } else if(t.state==='summary'&&t.summary) showNetSummary(t);
+  else if(t.state==='playing'){ $('#overlay').hidden=true; if(G&&G.online) renderChips(); }
+}
+function renderNetWaiting(t){
+  const me=t.you, LVLN=['','Beginner','Solid','Strong','Expert'];
+  $('#wr-title').textContent=t.private||(t.isHost?'Your table':`${t.seats[t.host]?t.seats[t.host].name:'Open'}’s table`);
+  const r=t.rules;
+  $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">${t.private?'<span>Lobby <b>Private</b></span>':''}
+    <span>Mode <b>${r.play==='live'?'Live':'Online'}</b></span><span>Scoring <b>${matchLabel(r)}</b></span>
+    ${r.play==='live'?`<span>Turn <b>${r.turn}s</b></span><span>Bank <b>${fmt(r.bank)}</b></span><span>Disconnect <b>${fmt(r.dc)}</b></span>`:'<span>Moves <b>1 day each</b></span>'}</div>`;
+  $('#wr-count').textContent=`Seats · ${t.seats.length}/${t.max}`;
+  let rows='';
+  for(let k=0;k<t.max;k++){
+    const s=t.seats[k];
+    if(!s){rows+=`<div class="seat-row empty"><span class="sa" style="background:var(--panel-2)"></span><span class="nm">Waiting for a player…</span>${t.isHost?'<button class="add-cpu" data-add="1">+ Add CPU</button>':''}</div>`;continue}
+    const isMe=k===me, av=s.avatar?avatarHTML(30,{name:s.name,color:s.avatar.color,animal:s.avatar.animal}):`<span class="sa" style="background:${COLORS[k%4]}">${esc(s.name[0])}</span>`;
+    rows+=`<div class="seat-row">${av}<span class="nm">${esc(s.name)}${s.connected?'':' <small style="color:var(--muted)">(away)</small>'}</span>
+      ${k===t.host?'<span class="tag">Host</span>':''}${isMe?'<span class="tag">You</span>':''}
+      ${s.cpu?(t.isHost?`<button class="lvl-chip" data-lvl="${esc(s.id)}">${LVLN[s.level]} ▾</button>`:`<span class="tag cpu">CPU · ${LVLN[s.level]}</span>`):''}
+      ${t.isHost&&!isMe?`<button class="kick" data-kick="${esc(s.id)}">Remove</button>`:''}</div>`;
+  }
+  $('#wr-seats').innerHTML=rows;
+  document.querySelectorAll('#wr-seats [data-add]').forEach(b=>b.onclick=()=>NET.send({t:'addCpu',level:NET.lastLevel||2}));
+  document.querySelectorAll('#wr-seats [data-lvl]').forEach(b=>b.onclick=()=>{const s=t.seats.find(x=>x.id===b.dataset.lvl); const lv=s.level%4+1; NET.lastLevel=lv; NET.send({t:'cpuLevel',seat:s.id,level:lv})});
+  document.querySelectorAll('#wr-seats [data-kick]').forEach(b=>b.onclick=()=>NET.send({t:'remove',seat:b.dataset.kick}));
+  const sb=$('#wr-start'); sb.hidden=!t.isHost||t.cpuRoom; sb.disabled=t.seats.length<2;
+  clearInterval(netCountT);
+  const tick=()=>{ const st=$('#wr-status');
+    if(t.countdownEnds){ const left=Math.max(0,Math.ceil((t.countdownEnds-t.now-(Date.now()-NET.tableAt))/1000)); st.className='wr-status go';
+      st.textContent=t.isHost?`Table full. Starting in ${left}s. Make any changes, or tap Start to begin now.`:`Table full. Starting in ${left}s…`; }
+    else { st.className='wr-status'; st.textContent=t.isHost?(t.seats.length<2?'Waiting for players to join.':'Start now, or wait for the table to fill.'):'Waiting for the table to fill or the host to start.'; } };
+  NET.tableAt=Date.now(); tick(); netCountT=setInterval(tick,500);
+}
+const _wrStart=$('#wr-start').onclick; $('#wr-start').onclick=()=>NET.table?NET.send({t:'start'}):_wrStart();
+const _wrLeave=$('#wr-leave').onclick; $('#wr-leave').onclick=$('#wr-leave2').onclick=()=>{ if(NET.table){ NET.send({t:'leave'}); NET.table=null; clearInterval(netCountT); show('lobby'); renderLobby(); } else _wrLeave(); };
+
+/* ----- the game table, drawn from the server's view ----- */
+const idCard=id=>mk(id>>2,id&3);
+const pubPlay=p=>p&&{...classify(p.cards.map(idCard)),by:p.by};
+let netTick=null;
+function applyView(v){
+  const n=v.seats.length, rot=j=>(j-v.you+n)%n, t=NET.table, fresh=!G||!G.online||G.commitHash!==v.commit;
+  // seats are reordered so you are always seat 0, as in offline play
+  const order=[...Array(n).keys()].map(k=>(k+v.you)%n);
+  M={n,online:true,table:true,players:order.map((j,k)=>{const s=v.seats[j]; return {name:k===0?'You':s.name,cpu:s.cpu,level:s.level,connected:s.connected,color:COLORS[k],tag:s.cpu?'CPU':'PLAYER'}}),
+    play:v.rules.play,match:t?t.rules.match:'endless',target:t?t.rules.target:25,bankOn:v.bankOn,turnTime:v.rules.turn,bankTime:v.rules.bank,
+    bal:t?order.map(a=>order.map(b=>t.ledger[a]?t.ledger[a][b]||0:0)):Array.from({length:n},()=>Array(n).fill(0))};
+  const prevHand=fresh?[]:G.hands[0], ids=new Set(v.hand);
+  const hand=prevHand.filter(c=>ids.has(c.id)); v.hand.forEach(id=>{ if(!hand.some(c=>c.id===id)) hand.push(idCard(id)); });
+  [...sel].forEach(id=>{ if(!ids.has(id)) sel.delete(id); });
+  const keep=fresh?{autoPass:false,confirmSpade:false}:{autoPass:G.autoPass,confirmSpade:G.confirmSpade};
+  G={online:true,commitHash:v.commit,commit:{hash:v.commit},...keep,
+    hands:order.map((j,k)=>k===0?hand:Array(v.seats[j].out?0:v.seats[j].oneCard?1:2).fill(null)),
+    cur:v.cur<0?-1:rot(v.cur),table:pubPlay(v.table),prev:pubPlay(v.prev),opening:v.opening,openCard:G&&!fresh&&G.openCard||null,
+    openPreview:v.phase==='opening',dealing:v.phase==='dealing',shown:hand.length,got:Array(n).fill(13),
+    finalLap:v.finalLap?{}:null,lapDone:v.lapDone,over:v.phase==='over',action:order.map(j=>v.seats[j].action),
+    bank:Array(n).fill(v.bank/1000),turnLeft:0,bankActive:false,log:[],clock:v.clock,leftover:0};
+  if(G.table) G.table.by=rot(G.table.by); if(G.prev) G.prev.by=rot(G.prev.by);
+  if(v.openCard!=null) G.openCard=idCard(v.openCard);
+  if(!G.openCard&&v.opening) G.openCard=hand.filter(c=>c.s===0).sort((a,b)=>a.id-b.id)[0]||null;
+  if(fresh){ sortMode=null; $('#sort-mode').textContent='None'; setAutoPass(false); }
+  if($('#game').hidden){ $('#overlay').hidden=true; show('game'); }
+  if(fresh||!$('#table').querySelector('.seat')) buildSeats();
+  clockTick(); render();
+  if(fresh&&G.dealing) banner('Dealing…',1500);
+  if(G.openPreview&&fresh===false&&!G._opened){ G._opened=true; }
+  // auto pass: your turn comes round and you've ticked it
+  if(G.autoPass&&G.cur===0&&G.table&&!G.over&&!G.opening) setTimeout(()=>{ if(G&&G.online&&G.autoPass&&G.cur===0&&G.table) NET.send({t:'pass'}); },500);
+  if(G.over&&v.result) recordNetGame(v);
+  clearInterval(netTick); netTick=setInterval(clockTick,250);
+}
+function clockTick(){
+  if(!G||!G.online) return clearInterval(netTick);
+  const c=G.clock, now=Date.now()-NET.offset;
+  G.turnLeft=0; G.bankActive=false;
+  if(c&&c.who===NET.view.you){ const left=Math.max(0,(c.endsAt-now)/1000);
+    if(c.phase==='turn') G.turnLeft=left; else if(c.phase==='bank'){ G.bankActive=true; G.bank[0]=left; } }
+  renderClock();
+}
+
+/* ----- after each game: stats, hand history and the summary ----- */
+function recordNetGame(v){
+  const r=v.result; if(NET.seen.has(r.proof.hash)) return; NET.seen.add(r.proof.hash);
+  const n=v.seats.length, rot=j=>(j-v.you+n)%n, me=v.you;
+  recordStat(r.type==='win'&&r.winner===me?'w':r.type==='win'&&r.counts[me]===0?'t':'l');
+  try{
+    const players=M.players.map(p=>({name:p.name,color:p.color,level:p.level||null}));
+    const start=r.proof.deck.slice(me*13,me*13+13).sort((a,b)=>a-b);
+    const log=(v.log||[]).map(e=>({...e,p:rot(e.p)}));
+    const counts=v.seats.map((_,k)=>r.counts[(k+me)%n]);
+    const head=r.type==='win'?(r.winner===me?'You went out!':`${v.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${v.seats[r.loser].name} is stuck with the 2♠`);
+    const list=store.get('thirteen.history',[]);
+    list.unshift({at:Date.now(),players,match:M.match,target:M.target,start,log,deck:r.proof.deck,commit:{salt:r.proof.salt,hash:r.proof.hash},
+      result:{type:r.type,winner:r.winner==null?null:rot(r.winner),loser:r.loser==null?null:rot(r.loser),counts,delta:Array(n).fill(0),head,net:Array(n).fill(0)}});
+    store.set('thirteen.history',list.slice(0,50));
+  }catch(e){}
+}
+let netSumT=null;
+function showNetSummary(t){
+  const s=t.summary, r=s.result, n=t.seats.length, me=t.you, order=[...Array(n).keys()].map(k=>(k+me)%n);
+  const name=j=>j===me?'You':t.seats[j].name;
+  const head=r.type==='win'?(r.winner===me?'You went out!':`${t.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${t.seats[r.loser].name} is stuck with the 2♠`);
+  const rows=order.map((j,k)=>`<tr><td><span class="who"><span class="dot" style="background:${COLORS[k]}"></span>${esc(name(j))}</span></td><td>${r.counts[j]}</td><td class="${s.delta[j]>0?'pos':s.delta[j]<0?'neg':''}">${signed(s.delta[j])||'0'}</td><td>${t.rules.match==='casual'?'—':signed(s.net[j])||'0'}</td></tr>`).join('');
+  const champ=s.champ>=0;
+  const breakOn=!!s.breakEnds, two=n===2;
+  $('#overlay').innerHTML=`<div class="sheet" role="dialog" aria-modal="true">
+    <div class="label">Game result · Deal ID ${esc(r.proof.hash.slice(0,8))}</div>
+    <h3>${champ?(s.champ===me?'You win the match!':esc(t.seats[s.champ].name)+' wins the match'):esc(head)}</h3>
+    ${r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
+    <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="brk-status" id="ns-status"></p>
+    ${champ?'':`<div class="brk-row">
+      <button class="btn btn-ghost" id="ns-pause" ${!t.isHost&&!two?'disabled':''}>${s.hostPause?'Unpause':'Pause'}</button>
+      <button class="btn btn-brass" id="ns-ready" ${breakOn&&!s.hostPause?'':'hidden'} ${s.isReady?'disabled':''}>Ready ${s.ready}/${n}</button>
+      ${n>2&&!breakOn&&!s.hostPause?`<label class="vote"><input type="checkbox" id="ns-vote" ${s.voted?'checked':''}><span>Vote pause</span><b>${s.votes}/${n}</b></label>`:''}
+    </div>`}
+    <div class="row"><button class="btn btn-ghost" id="ns-leave">Leave table</button></div>
+  </div>`;
+  $('#overlay').hidden=false;
+  const q=id=>document.getElementById(id);
+  if(q('ns-pause')) q('ns-pause').onclick=()=>NET.send({t:'pause'});
+  if(q('ns-ready')) q('ns-ready').onclick=()=>NET.send({t:'ready'});
+  if(q('ns-vote')) q('ns-vote').onchange=e=>NET.send({t:'vote',on:e.target.checked});
+  q('ns-leave').onclick=()=>{ NET.send({t:'leave'}); NET.table=null; G=null; $('#overlay').hidden=true; show('lobby'); };
+  clearInterval(netSumT); const at=Date.now();
+  const tick=()=>{ const el=q('ns-status'); if(!el) return clearInterval(netSumT); const now=t.now+(Date.now()-at);
+    el.className='brk-status'+(s.hostPause||breakOn?' on':'');
+    el.textContent=s.hostPause?'Paused by the host. The next game starts when the host unpauses.':breakOn?`Break: ${fmt((s.breakEnds-now)/1000)} left. Starts early once everyone is ready.`:champ?`Back to the table in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))}s.`:`Next game starts in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))} seconds.`; };
+  tick(); netSumT=setInterval(tick,500);
+}
+
+/* ----- sign in, guests and offline ----- */
+function loginErr(msg){ const e=$('#login-err'); e.textContent=msg||''; e.hidden=!msg; }
+function enterOnline(sess,guest){
+  NET.token=sess?sess.access_token:null;
+  startSession(!!guest);
+  if(sess&&!guest){ const meta=sess.user.user_metadata||{}; if(!store.get('thirteen.profile',null)||!account.named){ const nm=(meta.display_name||meta.full_name||meta.name||'').replace(/[^A-Za-z0-9 _.-]/g,'').slice(0,16); if(nm.length>=3){ account.name=nm; } account.named=true; store.set('thirteen.profile',account); } }
+  $('#who-line').textContent=guest?`Playing as ${profile.name} (guest) · `:`${profile.name} · `;
+  NET.connect(); show('menu');
+}
+$('#login-form').addEventListener('submit',async e=>{
+  e.preventDefault(); e.stopImmediatePropagation(); loginErr('');
+  const email=$('#login-user').value.trim(), pass=$('#login-pass').value;
+  if(!sb) return loginErr('Sign-in isn\'t available here. Use the installed app, or tap Play offline.');
+  if(!email||!pass) return loginErr('Enter your email and password.');
+  const b=$('#btn-login'); b.disabled=true; b.textContent='Logging in…';
+  try{ const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error) throw error; $('#login-pass').value=''; enterOnline(data.session,false);
+  }catch(err){ loginErr(/confirm/i.test(err.message)?'Check your email and confirm your account first.':/invalid/i.test(err.message)?'That email and password don\'t match.':'Couldn\'t log in: '+err.message); }
+  finally{ b.disabled=false; b.textContent='Log in'; }
+},true);
+$('#btn-signup').onclick=async()=>{
+  loginErr(''); const email=$('#login-user').value.trim(), pass=$('#login-pass').value;
+  if(!sb) return loginErr('Sign-up isn\'t available here. Use the installed app.');
+  if(!/^\S+@\S+\.\S+$/.test(email)) return loginErr('Enter your email above, then tap Create account.');
+  if(pass.length<8) return loginErr('Choose a password of at least 8 characters, then tap Create account.');
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:account.name},emailRedirectTo:appUrl()}});
+  if(error) return loginErr('Couldn\'t create the account: '+error.message);
+  if(data.session){ $('#login-pass').value=''; enterOnline(data.session,false); }
+  else toast('Account created. Check your email to confirm it, then log in.','info');
+};
+$('#btn-forgot').onclick=async()=>{
+  loginErr(''); const email=$('#login-user').value.trim();
+  if(!sb) return loginErr('Password reset isn\'t available here. Use the installed app.');
+  if(!/^\S+@\S+\.\S+$/.test(email)) return loginErr('Enter your email above, then tap Forgot password.');
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:appUrl()});
+  if(error) return loginErr('Couldn\'t send the reset email: '+error.message);
+  toast('Check your email for a link to reset your password.','info');
+};
+$('#btn-google').onclick=async()=>{
+  loginErr(''); if(!sb) return loginErr('Google sign-in isn\'t available here. Use the installed app.');
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:appUrl()}});
+  if(error) loginErr(/not enabled|unsupported/i.test(error.message)?'Google sign-in isn\'t switched on yet.':'Couldn\'t start Google sign-in: '+error.message);
+};
+$('#btn-guest').onclick=()=>{ loginErr(''); $('#login-pass').value=''; enterOnline(null,true); };
+$('#btn-offline').onclick=()=>{ loginErr(''); NET.disconnect(); startSession(false); $('#who-line').textContent='Offline · '; show('menu'); };
+$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; show('login'); };
+if(sb){
+  // keep the server's copy of your sign-in fresh, finish Google / email-link sign-ins, and handle password resets
+  sb.auth.onAuthStateChange((event,sess)=>{
+    if(event==='TOKEN_REFRESHED'&&sess) NET.token=sess.access_token;
+    if(event==='PASSWORD_RECOVERY') setTimeout(promptNewPassword,300);
+    if((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&sess&&!$('#login').hidden&&!NET.token) enterOnline(sess,false);
+  });
+}
+function promptNewPassword(){
+  openSheet(`<div class="label">Reset password</div><h3>Choose a new password</h3>
+    <form class="priv-fields" id="np-form"><label class="field"><span class="label">New password</span><input id="np-pass" type="password" minlength="8" autocomplete="new-password"></label>
+    <p class="form-err" id="np-err" hidden></p><div class="row"><button type="submit" class="btn btn-brass">Save password</button></div></form>`);
+  $('#np-form').onsubmit=async e=>{ e.preventDefault(); const p=$('#np-pass').value;
+    if(p.length<8){ $('#np-err').textContent='Use at least 8 characters.'; $('#np-err').hidden=false; return; }
+    const {error}=await sb.auth.updateUser({password:p}); if(error){ $('#np-err').textContent=error.message; $('#np-err').hidden=false; return; }
+    closeSheet(); toast('Password updated.','info'); };
+}
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-144846) */
+/* Offline support + automatic updates (build 20261104-162352) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
