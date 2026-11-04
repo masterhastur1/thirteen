@@ -1870,13 +1870,14 @@ $('#lb-private').onclick=()=>{
 function enterWaiting(t,isHost){
   leaveWaiting(true);
   const me=myName();
-  // joining a CPU-hosted offline table gives you the host controls, since a CPU can't add seats or start
-  WR={t:{...t,bots:{...(t.bots||{})},players:isHost?[me]:[...t.players.filter(n=>n!==me),me]},src:t.id,isHost:isHost||!!(t.bots&&t.bots[t.host]),me,count:null,timers:[]};
+  // only the host can add or remove CPUs; at a CPU-hosted offline table, the CPU host fills its open seats once you sit down
+  WR={t:{...t,bots:{...(t.bots||{})},players:isHost?[me]:[...t.players.filter(n=>n!==me),me]},src:t.id,isHost,me,count:null,timers:[]};
   $('#wr-title').textContent=t.private?`${t.name}`:isHost?'Your table':`${t.host}’s table`;
   $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">
     ${t.private?'<span>Lobby <b>Private</b></span>':''}<span>Mode <b>${t.play==='live'?'Live':'Online'}</b></span><span>Scoring <b>${matchLabel(t)}</b></span>
     ${t.play==='live'?`<span>Turn <b>${t.turn}s</b></span><span>Bank <b>${fmt(t.bank)}</b></span><span>Disconnect <b>${fmt(t.dc)}</b></span>`:'<span>Moves <b>1 day each</b></span>'}</div>`;
-  show('waiting'); renderWaiting(); checkFull(); // no automatic joiners: CPUs are added by hand
+  show('waiting'); renderWaiting(); checkFull(); // no automatic joiners: CPUs are added by the host
+  if(!isHost&&WR.t.bots[WR.t.host]){ const fill=()=>{ if(!WR||WR.t.players.length>=WR.t.seats) return; WR.t.players.push(seatBot(WR.t,WR.t.players)); renderWaiting(); checkFull(); WR.timers.push(setTimeout(fill,900)); }; WR.timers.push(setTimeout(fill,900)); }
 }
 function scheduleJoin(){
   if(!WR) return;
@@ -2323,7 +2324,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-173934) */
+/* Offline support + automatic updates (build 20261104-174303) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
