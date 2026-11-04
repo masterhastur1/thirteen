@@ -462,7 +462,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   <div class="wordmark">Thirteen<small>Spades high · 2 to 4 players</small></div>
   <form class="login-form" id="login-form">
     <label class="field"><span class="label">Email</span><input id="login-user" type="email" autocomplete="email" maxlength="120" placeholder="you@example.com"></label>
-    <label class="field"><span class="label">Password</span><input id="login-pass" type="password" autocomplete="current-password" maxlength="72"></label>
+    <label class="field"><span class="label">Password</span><input id="login-pass" type="password" autocomplete="current-password" maxlength="32" placeholder="8 to 12 characters"></label>
     <p class="form-err" id="login-err" hidden></p>
     <button class="btn btn-brass" type="submit" id="btn-login">Log in</button>
     <button class="btn btn-ghost google-btn" type="button" id="btn-google"><span class="g-mark" aria-hidden="true">G</span>Continue with Google</button>
@@ -2279,7 +2279,8 @@ $('#btn-signup').onclick=async()=>{
   loginErr(''); const email=$('#login-user').value.trim(), pass=$('#login-pass').value;
   if(!sb) return loginErr('Sign-up isn\'t available here. Use the installed app.');
   if(!/^\S+@\S+\.\S+$/.test(email)) return loginErr('Enter your email above, then tap Create account.');
-  if(pass.length<8) return loginErr('Choose a password of at least 8 characters, then tap Create account.');
+  if(pass.length>12) return loginErr('That password exceeds the 12-character limit. Use 8 to 12 characters.');
+  if(pass.length<8) return loginErr('Choose a password of 8 to 12 characters, then tap Create account.');
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:account.name},emailRedirectTo:appUrl()}});
   if(error) return loginErr('Couldn\'t create the account: '+error.message);
   if(data.session){ $('#login-pass').value=''; enterOnline(data.session,false); }
@@ -2311,17 +2312,18 @@ if(sb){
 }
 function promptNewPassword(){
   openSheet(`<div class="label">Reset password</div><h3>Choose a new password</h3>
-    <form class="priv-fields" id="np-form"><label class="field"><span class="label">New password</span><input id="np-pass" type="password" minlength="8" autocomplete="new-password"></label>
+    <form class="priv-fields" id="np-form"><label class="field"><span class="label">New password</span><input id="np-pass" type="password" maxlength="32" autocomplete="new-password" placeholder="8 to 12 characters"></label>
     <p class="form-err" id="np-err" hidden></p><div class="row"><button type="submit" class="btn btn-brass">Save password</button></div></form>`);
   $('#np-form').onsubmit=async e=>{ e.preventDefault(); const p=$('#np-pass').value;
-    if(p.length<8){ $('#np-err').textContent='Use at least 8 characters.'; $('#np-err').hidden=false; return; }
+    if(p.length>12){ $('#np-err').textContent='That password exceeds the 12-character limit. Use 8 to 12 characters.'; $('#np-err').hidden=false; return; }
+    if(p.length<8){ $('#np-err').textContent='Use 8 to 12 characters.'; $('#np-err').hidden=false; return; }
     const {error}=await sb.auth.updateUser({password:p}); if(error){ $('#np-err').textContent=error.message; $('#np-err').hidden=false; return; }
     closeSheet(); toast('Password updated.','info'); };
 }
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-163930) */
+/* Offline support + automatic updates (build 20261104-173832) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
