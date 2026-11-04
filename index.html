@@ -718,7 +718,7 @@ const KIND_NAME={1:'Singles',2:'Pairs',3:'Triples',5:'Five-card hands'};
 const KIND_COUNT={1:'1 card',2:'2 cards',3:'3 cards',5:'5 cards'};
 const mk=(r,s)=>({r,s,id:r*4+s});
 const cname=c=>RANKS[c.r]+SUITS[c.s];
-const plural=r=>RANKS[r]+'s';
+const plural=r=>['3s','4s','5s','6s','7s','8s','9s','10s','Jacks','Queens','Kings','Aces','2s'][r];
 const face=r=>r<=10?r+3:(r===11?14:2);
 const SPADE2=51;
 function cmpKey(a,b){for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]??-1)-(b[i]??-1);if(d)return d}return 0}
@@ -779,6 +779,18 @@ function describe(p){
   if(p.kind===1) return 'the '+cname(p.cards[0]);
   if(p.kind===2) return 'a pair of '+plural(p.r);
   if(p.kind===3) return 'three '+plural(p.r);
+  // five-card hands spell out the full rank: "a 5-high straight", "a spade flush 9-high", "Jacks full"
+  const hi=v=>({14:'Ace',13:'King',12:'Queen',11:'Jack'})[v]||String(v);
+  const art=w=>/^(Ace|8)/.test(w)?'an ':'a ';
+  const SU=['club','diamond','heart','spade'];
+  switch(p.cat){
+    case 1: return `two pair, ${plural(p.key[0])} and ${plural(p.key[1])}`;
+    case 2: {const h=hi(p.key[0]); return `${art(h)}${h}-high straight`}
+    case 3: return `a ${SU[p.key[0]]} flush ${RANKS[p.key[1]].replace('J','Jack').replace('Q','Queen').replace('K','King').replace(/^A$/,'Ace')}-high`;
+    case 4: return `${plural(p.key[0])} full`;
+    case 5: return `four ${plural(p.key[0])}`;
+    case 6: if(p.royal) return 'a royal flush'; {const h=hi(p.key[1]); return `${art(h)}${h}-high ${SU[p.key[0]]} straight flush`}
+  }
   return (/^[AEIOU]/.test(p.name)?'an ':'a ')+p.name.toLowerCase();
 }
 function allPlays(hand){
@@ -1359,7 +1371,7 @@ function renderPile(){
     pile.innerHTML=`<div class="pile-cards" style="width:${w}px;height:${H}px">${row([G.openCard],0,'opening',w)}</div>`;
     rl.innerHTML=tag(handRank(classify([G.openCard]))); rl.hidden=false; return;
   }
-  if(!t){pile.innerHTML=`<div class="pile-empty">${G.opening?'Lowest club opens':'Table clear'}</div>`; rl.hidden=true; return}
+  if(!t){pile.innerHTML=`<div class="pile-empty">${G.opening?'Lowest club opens':''}</div>`; rl.hidden=true; return}
   const prev=G.prev, boxW=Math.max(widthOf(t.cards),prev?widthOf(prev.cards):0);
   pile.innerHTML=`<div class="pile-cards" style="width:${boxW}px;height:${H+(prev?lift:0)}px">${prev?row(prev.cards,0,'ghost',boxW):''}${row(t.cards,prev?lift:0,'fresh',boxW)}</div>`;
   rl.innerHTML=tag(handRank(t)); rl.hidden=false;
@@ -2026,7 +2038,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-143950) */
+/* Offline support + automatic updates (build 20261104-144505) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
