@@ -477,6 +477,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 }
 @media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
 @media (max-height:640px){.table{min-height:200px} .hand{height:118px}}
+.google-btn:disabled{opacity:.38; filter:grayscale(1); cursor:not-allowed; pointer-events:none}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -488,7 +489,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <label class="field"><span class="label">Password</span><input id="login-pass" type="password" autocomplete="current-password" maxlength="32" placeholder="8 to 20 characters"></label>
     <p class="form-err" id="login-err" hidden></p>
     <button class="btn btn-brass" type="submit" id="btn-login">Log in</button>
-    <button class="btn btn-ghost google-btn" type="button" id="btn-google"><span class="g-mark" aria-hidden="true">G</span>Continue with Google</button>
+    <button class="btn btn-ghost google-btn" type="button" id="btn-google" disabled aria-disabled="true" title="Google sign-in is coming soon"><span class="g-mark" aria-hidden="true">G</span>Continue with Google</button>
     <button class="btn btn-ghost" type="button" id="btn-guest">Guest</button>
     <p class="login-links"><button type="button" class="linkish" id="btn-signup">Create account</button> · <button type="button" class="linkish" id="btn-forgot">Forgot password?</button> · <button type="button" class="linkish" id="btn-offline">Play offline</button></p>
   </form>
@@ -2384,6 +2385,7 @@ $('#btn-forgot').onclick=async()=>{
   toast('Check your email for a link to reset your password.','info');
 };
 $('#btn-google').onclick=async()=>{
+  if($('#btn-google').disabled) return;   // Google sign-in is off until the Google Cloud setup is done
   loginErr(''); if(!sb) return loginErr('Google sign-in isn\'t available here. Use the installed app.');
   const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:appUrl()}});
   if(error) loginErr(/not enabled|unsupported/i.test(error.message)?'Google sign-in isn\'t switched on yet.':'Couldn\'t start Google sign-in: '+error.message);
@@ -2412,7 +2414,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-181854) */
+/* Offline support + automatic updates (build 20261104-182730) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
