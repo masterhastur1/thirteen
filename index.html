@@ -752,7 +752,7 @@ function classifyFive(cs){
     cs=[...cs].sort((a,b)=>fv(a)-fv(b));
   }
   const royal=cat===6&&cs[0].s===3&&high===14;
-  return {kind:5,cards:cs,cat,key,name:royal?'Royal flush':FIVE[cat],royal};
+  return {kind:5,cards:cs,cat,key,name:royal?'Royal Flush':FIVE[cat],royal};
 }
 function beats(p,t){
   if(!t) return true;
@@ -789,7 +789,7 @@ function describe(p){
     case 3: return `a ${SU[p.key[0]]} flush ${RANKS[p.key[1]].replace('J','Jack').replace('Q','Queen').replace('K','King').replace(/^A$/,'Ace')}-high`;
     case 4: return `${plural(p.key[0])} full`;
     case 5: return `four ${plural(p.key[0])}`;
-    case 6: if(p.royal) return 'a royal flush'; {const h=hi(p.key[1]); return `${art(h)}${h}-high ${SU[p.key[0]]} straight flush`}
+    case 6: if(p.royal) return 'a Royal Flush'; {const h=hi(p.key[1]); return `${art(h)}${h}-high ${SU[p.key[0]]} straight flush`}
   }
   return (/^[AEIOU]/.test(p.name)?'an ':'a ')+p.name.toLowerCase();
 }
@@ -1391,7 +1391,7 @@ function handRank(p){
     case 3: return `Flush, ${SUIT_WORD[p.key[0]]}, ${RANK_WORD[p.key[1]]} high`;
     case 4: return `Full house, ${RANK_PL[p.key[0]]} full`;
     case 5: return `Four ${RANK_PL[p.key[0]]}`;
-    case 6: return p.royal?'Royal flush':`Straight flush, ${SUIT_WORD[p.key[0]]}, ${faceWord(p.key[1])} high`;
+    case 6: return p.royal?'Royal Flush':`Straight flush, ${SUIT_WORD[p.key[0]]}, ${faceWord(p.key[1])} high`;
   }
   return p.name;
 }
@@ -2038,7 +2038,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-144505) */
+/* Offline support + automatic updates (build 20261104-144846) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
