@@ -992,9 +992,16 @@ function pay(from,to,pts){M.bal[to][from]+=pts;M.bal[from][to]-=pts}
 
 function clearTimers(){if(!G)return;clearInterval(G.dealT);document.querySelectorAll('.flying,.deal-deck').forEach(e=>e.remove());clearTimeout(G.wait);clearInterval(G.tick);clearInterval(G.nextT);clearTimeout(G.bannerT)}
 
+/* Every game, new or next, starts with the seats in a fresh random order (you stay at the bottom). */
+function shuffleSeats(){
+  const perm=[0,...secureShuffle([...Array(M.n).keys()].slice(1))];
+  M.players=perm.map(j=>M.players[j]);
+  M.bal=perm.map(a=>perm.map(b=>M.bal[a][b]));
+}
 function deal(){
   clearTimers(); $('#overlay').hidden=true;
   if(M.match==='casual') M.bal=M.bal.map(r=>r.map(()=>0));
+  shuffleSeats();
   const deck=[];for(let r=0;r<13;r++)for(let s=0;s<4;s++)deck.push(mk(r,s));
   secureShuffle(deck);
   const n=M.n;
@@ -1808,7 +1815,7 @@ function renderLobby(){
   $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
     return `<button class="tl-item${full?' full':''}" data-id="${t.id}" ${full?'disabled':''}><b>${esc(t.host)}'s table</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
-      <span class="meta"><span class="pill ${t.play}">${t.play}</span>${t.bots&&t.bots[t.host]?`<span class="pill cpu">CPU · ${LVL[t.bots[t.host]]}</span>`:''}${matchLabel(t)}${t.play==='live'?` · ${t.turn}s turns · ${fmt(t.bank)} bank`:' · 1 day per move'}</span>${t.inProgress?'<span class="inprog">In progress · join for the next game</span>':''}</button>`}).join('')
+      <span class="meta"><span class="pill ${t.play}">${t.play}</span>${t.bots&&t.bots[t.host]?`<span class="pill cpu">CPU · ${LVL[t.bots[t.host]]}</span>`:''}${matchLabel(t)}${t.play==='live'?` · ${t.turn}s turns · ${fmt(t.bank)} bank`:' · 1 day per move'}</span>${t.inProgress?'<span class="inprog">In progress</span>':''}</button>`}).join('')
     :`<p class="hint" style="text-align:center;padding:20px 0">${NET.ready&&!LB.tables.length?'No open tables right now. Create one, or join a private game.':'No tables match. Try another filter or create one.'}</p>`;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
 }
@@ -2340,7 +2347,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-175501) */
+/* Offline support + automatic updates (build 20261104-180350) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
