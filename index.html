@@ -391,9 +391,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #lobby .table-list{flex:none; overflow:visible}
   #lobby .table-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
   /* Game: a wide poker table across the whole screen; your hand and controls sit underneath it */
-  #game{max-width:none; display:grid; padding-block:6px; gap:6px 10px;
-    grid-template-columns:64px minmax(0,1fr) 118px; grid-template-rows:35px minmax(0,1fr) 68px 68px;
-    grid-template-areas:"score score score" "table table table" "sort hand pass" "bank hand play"}
+  /* The table runs from under the top buttons to the bottom of the screen; your hand and buttons sit on the felt */
+  #game{max-width:none; display:grid; padding-block:6px; column-gap:10px; row-gap:6px;
+    grid-template-columns:22px 64px minmax(0,1fr) 118px 22px; grid-template-rows:35px minmax(0,1fr) 62px 62px 14px;
+    grid-template-areas:"score score score score score" ". . . . ." ". sort hand pass ." ". bank hand play ." ". . . . ."}
+  #game .table{grid-row:2 / 6; grid-column:1 / -1}
   /* top row: menu and a half-width Scoreboard on the left, status in the middle, Auto pass in the top-right corner */
   #game .scorebar{grid-area:score; width:100%}
   #game .score-btn{flex:none; width:180px; min-height:35px; height:35px; font-size:14px}
@@ -404,10 +406,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .mybar{display:contents}
   #game .status{position:absolute; top:6px; left:50%; transform:translateX(-50%); width:min(40%,420px); height:35px; min-height:0; justify-content:center; text-align:center; pointer-events:none}
   #game .status p{font-size:14px}
-  #game .table{grid-area:table; min-height:0; border-radius:999px; border-width:10px}
-  #game .table::before{inset:18px; border-radius:999px}
-  #game .table::after{border-radius:999px}
-  #game .hand{grid-area:hand; height:142px; align-self:end}
+  #game .table{min-height:0; border-radius:120px; border-width:10px}
+  #game .table::before{inset:16px; border-radius:104px}
+  #game .table::after{border-radius:110px}
+  #game .hand{grid-area:hand; height:130px; align-self:end; z-index:2}
+  #game .controls > *{position:relative; z-index:2}
   #btn-pass,#btn-play{font-size:15px; padding:0 6px; letter-spacing:.04em}
   #btn-pass{flex-direction:column; gap:0; line-height:1.05}
   #btn-pass #clock{font-size:13px}
@@ -419,12 +422,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #btn-sort small,#btn-bank small{font-size:9px; letter-spacing:.08em}
   #btn-sort b,#btn-bank b{font-size:14px}
   #game .controls.myturn > *{animation:myturn 1.8s ease-in-out infinite}
-  .seat.left,.seat.right{top:50%; transform:translateY(-50%)}
-  .seat.left{left:14px} .seat.right{right:14px}
-  .seat.top{top:0; width:auto; flex-direction:row; align-items:center; gap:24px}
+  .seat.left,.seat.right{top:22%; transform:translateY(-50%)}
+  .seat.left{left:24px} .seat.right{right:24px}
+  .seat.top{top:8px; left:31%; width:auto; flex-direction:row; align-items:center; gap:24px}
   .seat .avatar{flex:none}
-  .pile{top:53%}
-  .rankline{bottom:7px}
+  .pile{top:30%}
+  .rankline{bottom:auto; top:calc(30% + 96px)}
   .score-pop{left:0; right:auto; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
   .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
   .banner{top:24%}
@@ -1329,12 +1332,13 @@ function renderSeats(){
 }
 function renderPile(){
   const t=G.table, pile=$('#pile'), rl=$('#rankline');
-  const sig=[t?t.cards.map(c=>c.id).join('-'):'x',G.prev?G.prev.cards.map(c=>c.id).join('-'):'x',G.opening,!!G.openPreview].join('|');
+  const wide=matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+  const sig=[t?t.cards.map(c=>c.id).join('-'):'x',G.prev?G.prev.cards.map(c=>c.id).join('-'):'x',G.opening,!!G.openPreview,wide].join('|');
   if(pile.dataset.sig===sig) return; pile.dataset.sig=sig;
-  const w=50, H=70, lift=36;
-  const row=(cards,top,cls,boxW)=>{const st=cards.length>1?26:0, cw=w+st*(cards.length-1), x0=(boxW-cw)/2;
+  const w=wide?62:50, H=Math.round(w*1.4), lift=wide?42:36; // bigger table cards sideways
+  const row=(cards,top,cls,boxW)=>{const st=cards.length>1?Math.round(w*.52):0, cw=w+st*(cards.length-1), x0=(boxW-cw)/2;
     return cards.map((c,k)=>cardHTML(c,w,x0+k*st,top,cls)).join('')};
-  const widthOf=cards=>w+(cards.length>1?26:0)*(cards.length-1);
+  const widthOf=cards=>w+(cards.length>1?Math.round(w*.52):0)*(cards.length-1);
   const tag=label=>`<b>${esc(label)}</b>`;
   if(!t&&G.openPreview&&G.cur!==0){
     const op=M.players[G.cur];
@@ -2008,7 +2012,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-063431) */
+/* Offline support + automatic updates (build 20261104-064009) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
