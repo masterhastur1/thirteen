@@ -393,16 +393,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   /* Game: a wide poker table across the whole screen; your hand and controls sit underneath it */
   /* The table runs from under the top buttons to the bottom of the screen; your hand and buttons sit on the felt */
   #game{max-width:none; display:grid; padding-block:6px; column-gap:10px; row-gap:6px;
-    grid-template-columns:22px 64px minmax(0,1fr) 118px 22px; grid-template-rows:35px minmax(0,1fr) 62px 62px 14px;
-    grid-template-areas:"score score score score score" ". . . . ." ". sort hand pass ." ". bank hand play ." ". . . . ."}
+    grid-template-columns:22px 42px minmax(0,1fr) 100px 22px; grid-template-rows:35px minmax(0,1fr) 62px 62px 14px;
+    grid-template-areas:"score score score score score" ". . . . ." ". bank hand pass ." ". sort hand play ." ". . . . ."}
   #game .table{grid-row:2 / 6; grid-column:1 / -1}
   /* top row: menu and a half-width Scoreboard on the left, status in the middle, Auto pass in the top-right corner */
   #game .scorebar{grid-area:score; width:100%}
-  #game .score-btn{flex:none; width:180px; min-height:35px; height:35px; font-size:14px}
-  #game .autopass{margin-left:auto; min-height:35px; height:35px}
+  #game .score-btn{flex:none; width:135px; min-height:26px; height:26px; align-self:center; font-size:11px; gap:6px; border-radius:9px}
+  #game .score-btn .sb-ico{transform:scale(.8)}
+  #game .autopass{margin-left:auto; min-height:26px; height:26px; align-self:center; font-size:9px; padding:0 7px; gap:5px; border-radius:9px}
+  #game .autopass input{width:14px; height:14px}
   #game #btn-leave{width:35px; height:35px; min-height:35px; font-size:17px}
   #game .table{margin-top:-2px}
-  .score-pop{top:42px}
+  .score-pop{top:38px}
   #game .mybar{display:contents}
   #game .status{position:absolute; top:6px; left:50%; transform:translateX(-50%); width:min(40%,420px); height:35px; min-height:0; justify-content:center; text-align:center; pointer-events:none}
   #game .status p{font-size:14px}
@@ -411,16 +413,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .table::after{border-radius:110px}
   #game .hand{grid-area:hand; height:130px; align-self:end; z-index:2}
   #game .controls > *{position:relative; z-index:2}
-  #btn-pass,#btn-play{font-size:15px; padding:0 6px; letter-spacing:.04em}
+  #btn-pass,#btn-play{font-size:13px; padding:0 5px; letter-spacing:.04em}
   #btn-pass{flex-direction:column; gap:0; line-height:1.05}
-  #btn-pass #clock{font-size:13px}
+  #btn-pass #clock{font-size:11px}
   /* Sort and Bank: half size, stacked to the left of your cards. Pass and Play: stacked on the right. */
   #game .controls{display:contents}
   #btn-sort{grid-area:sort} #btn-bank{grid-area:bank} #btn-pass{grid-area:pass} #btn-play{grid-area:play}
   #game .controls .btn,#game .controls .ctl{min-height:0}
-  #btn-sort,#btn-bank{padding:0 4px; border-radius:10px}
-  #btn-sort small,#btn-bank small{font-size:9px; letter-spacing:.08em}
-  #btn-sort b,#btn-bank b{font-size:14px}
+  /* Bank on top, Sort under it, both 35% smaller; Pass and Play 15% smaller */
+  #btn-sort,#btn-bank{height:40px; align-self:end; padding:0 2px; border-radius:8px}
+  #btn-bank{align-self:end} #btn-sort{align-self:start}
+  #btn-sort small,#btn-bank small{font-size:7px; letter-spacing:.06em}
+  #btn-sort b,#btn-bank b{font-size:11px}
+  #btn-pass,#btn-play{height:53px; border-radius:10px}
+  #btn-pass{align-self:end} #btn-play{align-self:start}
   #game .controls.myturn > *{animation:myturn 1.8s ease-in-out infinite}
   .seat.left,.seat.right{top:22%; transform:translateY(-50%)}
   .seat.left{left:24px} .seat.right{right:24px}
@@ -2012,7 +2018,7 @@ function buildPDF(h){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-064009) */
+/* Offline support + automatic updates (build 20261104-122913) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
