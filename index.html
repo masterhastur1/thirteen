@@ -383,6 +383,24 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .hist-item b{display:block; font-size:15px}
 .hist-item span{font-size:13px; color:var(--muted)}
 .hist-item em{font-style:normal; font-family:var(--cond); font-size:18px; font-variant-numeric:tabular-nums}
+.hist-item{cursor:pointer; padding-left:6px}
+.hist-item .hi-main{flex:1; min-width:0}
+.hist-item .hi-main span{display:block}
+.hi-star,.hi-note{flex:none; width:36px; height:36px; display:grid; place-items:center; border-radius:9px; color:var(--muted); background:none}
+.hi-star svg,.hi-note svg{width:22px; height:22px}
+.hi-star[aria-pressed="true"]{color:var(--brass,#d8b46a)}
+.hi-star[aria-pressed="true"] svg path{fill:currentColor}
+.hi-note{margin-right:-4px; color:var(--text,#eee); opacity:.75}
+.hi-note.has{color:var(--brass,#d8b46a); opacity:1}
+.hist-filter{display:flex; gap:6px}
+.hist-filter button{flex:1; padding:8px 0; border-radius:10px; border:1px solid var(--line); background:var(--panel-2); font-weight:600; color:var(--muted)}
+.hist-filter button[aria-pressed="true"]{color:var(--text,#fff); border-color:var(--brass,#d8b46a)}
+.note-layer{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.35); display:flex; align-items:flex-start; justify-content:center; padding:80px 16px 16px}
+.note-box{position:relative; width:min(320px,100%); background:#f6edc8; color:#2a2414; border-radius:12px; padding:14px 14px 10px; box-shadow:0 14px 34px rgba(0,0,0,.55)}
+.note-box .nb-title{font-weight:700; font-size:13px; letter-spacing:.06em; text-transform:uppercase; opacity:.7; margin-bottom:8px; padding-right:30px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.note-box textarea{width:100%; min-height:168px; resize:none; border:0; outline:0; background:repeating-linear-gradient(#f6edc8 0 23px,#e2d6a8 23px 24px); color:inherit; font:16px/24px var(--body,system-ui); padding:0}
+.note-box .nb-x{position:absolute; top:6px; right:6px; width:32px; height:32px; border-radius:8px; font-size:22px; line-height:1; color:#2a2414; background:none}
+.note-box .nb-count{text-align:right; font-size:12px; opacity:.6}
 .minihand{display:flex; flex-wrap:wrap; gap:4px}
 .mc{display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:26px; padding:0 4px; border-radius:5px; background:var(--card); color:var(--ink); font-family:var(--cond); font-weight:700; font-size:15px}
 .mc.red{color:var(--suit-red)}
@@ -927,7 +945,7 @@ function applyOrientation(fromUser){
 applyOrientation(false);
 $('#btn-clear-hist').onclick=()=>{
   const b=$('#btn-clear-hist');
-  if(b.dataset.arm){store.set('thirteen.history',[]);delete b.dataset.arm;b.textContent='Clear history';syncSettings();toast('Hand history cleared.','info');return}
+  if(b.dataset.arm){const favs=store.get('thirteen.history',[]).filter(h=>h.fav);store.set('thirteen.history',favs);delete b.dataset.arm;b.textContent='Clear history';syncSettings();toast(favs.length?'Hand history cleared. Favorites were kept.':'Hand history cleared.','info');return}
   b.dataset.arm='1'; b.textContent='Tap again to clear';
   setTimeout(()=>{if(b.dataset.arm){delete b.dataset.arm;b.textContent='Clear history'}},4000);
 };
@@ -1975,18 +1993,67 @@ const cardOf=id=>mk(id>>2,id&3);
 function saveHistory(r){
   const rec={at:Date.now(),players:M.players.map(p=>({name:p.name,color:p.color,level:p.level||null})),match:M.match,target:M.target,
     start:G.startHand,log:G.log,deck:G.deck,commit:G.commit,result:{type:r.type,winner:r.winner??null,loser:r.loser??null,counts:r.counts,delta:r.delta,head:r.head,net:M.players.map((_,i)=>net(i))}};
-  const list=store.get(HKEY,[]); list.unshift(rec); store.set(HKEY,list.slice(0,50));
+  pushHistory(rec);
 }
+/* History keeps the 100 most recent games, plus every favorited game (starred games never age out). */
+const HIST_RECENT=100, HIST_FAVS=999;
+function pruneHistory(list){
+  list.sort((a,b)=>b.at-a.at);
+  const recent=new Set(list.slice(0,HIST_RECENT));
+  return list.filter(h=>h.fav||recent.has(h));
+}
+function saveHistoryList(list){
+  // if the device runs out of room, the oldest unstarred games go first
+  for(;;){ try{ localStorage.setItem(HKEY,JSON.stringify(list)); return true; }
+    catch(e){ const i=list.map(h=>!h.fav).lastIndexOf(true); if(i<0) return false; list.splice(i,1); } }
+}
+function pushHistory(rec){
+  rec.id=rec.at.toString(36)+Math.random().toString(36).slice(2,6);
+  const list=store.get(HKEY,[]); list.unshift(rec); saveHistoryList(pruneHistory(list));
+}
+let histFilter='new';
 const mcHTML=id=>{const c=cardOf(id);return `<span class="mc s${c.s} ${c.s===1||c.s===2?'red':''}">${cname(c)}</span>`};
 const when=t=>new Date(t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const STAR_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+const NOTE_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h10l4 4V20a.5.5 0 0 1-.5.5h-13A.5.5 0 0 1 5 20z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function showHistory(){
-  const list=store.get(HKEY,[]);
+  const all=store.get(HKEY,[]).sort((a,b)=>b.at-a.at);
+  all.forEach((h,k)=>{ if(!h.id) h.id=h.at.toString(36)+'x'+k; });
+  const list=histFilter==='fav'?all.filter(h=>h.fav):all.slice(0,HIST_RECENT);
   const items=list.length?list.map((h,k)=>{const d=h.result.delta[0];
-    return `<button class="hist-item" data-k="${k}"><div><b>${esc(h.result.head)}</b><span>${when(h.at)} · ${h.players.length} players · ${h.match}</span></div><em class="${d>0?'pos':d<0?'neg':''}">${signed(d)||'0'}</em></button>`}).join('')
-    :'<p>No games yet. Finished games appear here so you can review them later.</p>';
-  openSheet(`<div class="label">Last ${Math.min(list.length,50)} games · this device</div><h3>Hand history</h3><div class="hist-list">${items}</div><button class="btn btn-ghost" id="h-close">Close</button>`);
+    return `<div class="hist-item" role="button" tabindex="0" data-k="${k}">
+      <button class="hi-star" data-star="${k}" aria-pressed="${!!h.fav}" aria-label="${h.fav?'Remove from favorites':'Add to favorites'}">${STAR_SVG}</button>
+      <div class="hi-main"><b>${esc(h.result.head)}</b><span>${when(h.at)} · ${h.players.length} players · ${h.match}</span></div>
+      <em class="${d>0?'pos':d<0?'neg':''}">${signed(d)||'0'}</em>
+      ${h.fav?`<button class="hi-note${h.note?' has':''}" data-note="${k}" aria-label="${h.note?'Edit note':'Add a note'}">${NOTE_SVG}</button>`:''}</div>`}).join('')
+    :histFilter==='fav'?'<p>No favorites yet. Tap the star on a game to keep it here.</p>':'<p>No games yet. Finished games appear here so you can review them later.</p>';
+  openSheet(`<div class="label">${histFilter==='fav'?'Favorites':`Last ${Math.min(all.length,HIST_RECENT)} games`} · this device</div><h3>Hand history</h3>
+    <div class="hist-filter"><button data-f="new" aria-pressed="${histFilter==='new'}">Newest</button><button data-f="fav" aria-pressed="${histFilter==='fav'}">★ Favorites</button></div>
+    <div class="hist-list">${items}</div><button class="btn btn-ghost" id="h-close">Close</button>`);
+  const scroller=$('#overlay .sheet'); if(showHistory.keepScroll!=null){ scroller.scrollTop=showHistory.keepScroll; showHistory.keepScroll=null; }
+  const update=(h,fn)=>{ const cur=store.get(HKEY,[]); const x=cur.find(y=>(y.id||'')===h.id||y.at===h.at); if(x){ fn(x); fn(h); saveHistoryList(cur); } };
   $('#h-close').onclick=closeSheet;
+  document.querySelectorAll('.hist-filter button').forEach(b=>b.onclick=()=>{histFilter=b.dataset.f; showHistory();});
   document.querySelectorAll('.hist-item').forEach(b=>b.onclick=()=>showGame(list[+b.dataset.k]));
+  document.querySelectorAll('.hi-star').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const h=list[+b.dataset.star];
+    if(!h.fav&&all.filter(x=>x.fav).length>=HIST_FAVS) return toast('Your favorites are full. Unstar a game to add another.');
+    update(h,x=>{ x.fav=!x.fav; if(!x.id) x.id=h.id; });
+    showHistory.keepScroll=scroller.scrollTop; showHistory(); });
+  document.querySelectorAll('.hi-note').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openNote(list[+b.dataset.note],b,update); });
+}
+/* A small note pad on a favorited game: 200 characters, saved whenever it closes (the x, or a tap anywhere outside). */
+function openNote(h,btn,update){
+  document.querySelector('.note-layer')?.remove();
+  const layer=document.createElement('div'); layer.className='note-layer';
+  layer.innerHTML=`<div class="note-box" role="dialog" aria-label="Game note"><div class="nb-title">${esc(h.result.head)} · ${when(h.at)}</div>
+    <button class="nb-x" aria-label="Close note">×</button><textarea maxlength="200" placeholder="Write a note…"></textarea><div class="nb-count"></div></div>`;
+  document.body.appendChild(layer);
+  const ta=layer.querySelector('textarea'), cnt=layer.querySelector('.nb-count');
+  ta.value=h.note||''; const count=()=>cnt.textContent=`${ta.value.length}/200`; count(); ta.oninput=count;
+  const close=()=>{ const v=ta.value.slice(0,200).trim(); update(h,x=>{ x.note=v; }); btn.classList.toggle('has',!!v); btn.setAttribute('aria-label',v?'Edit note':'Add a note'); layer.remove(); };
+  layer.querySelector('.nb-x').onclick=close;
+  layer.addEventListener('click',e=>{ if(!e.target.closest('.note-box')) close(); });
+  setTimeout(()=>{ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); },30);
 }
 function logLines(h){
   const nm=i=>i===0?'You':h.players[i].name;
@@ -2238,10 +2305,8 @@ function recordNetGame(v){
     const log=(v.log||[]).map(e=>({...e,p:rot(e.p)}));
     const counts=v.seats.map((_,k)=>r.counts[(k+me)%n]);
     const head=r.type==='win'?(r.winner===me?'You went out!':`${v.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${v.seats[r.loser].name} is stuck with the 2♠`);
-    const list=store.get('thirteen.history',[]);
-    list.unshift({at:Date.now(),players,match:M.match,target:M.target,start,log,deck:r.proof.deck,commit:{salt:r.proof.salt,hash:r.proof.hash},
+    pushHistory({at:Date.now(),players,match:M.match,target:M.target,start,log,deck:r.proof.deck,commit:{salt:r.proof.salt,hash:r.proof.hash},
       result:{type:r.type,winner:r.winner==null?null:rot(r.winner),loser:r.loser==null?null:rot(r.loser),counts,delta:Array(n).fill(0),head,net:Array(n).fill(0)}});
-    store.set('thirteen.history',list.slice(0,50));
   }catch(e){}
 }
 let netSumT=null;
@@ -2347,7 +2412,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-180350) */
+/* Offline support + automatic updates (build 20261104-181854) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
