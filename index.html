@@ -492,9 +492,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 /* a disconnected player: big red AFK over the avatar, and their remaining away time centered over their name */
 .afk-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:30; font-family:var(--cond); font-weight:700; font-size:26px; letter-spacing:.08em; color:#ff4040; background:rgba(20,6,6,.88); border:2px solid #ff4040; border-radius:7px; padding:0 8px; line-height:1.2; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.7); box-shadow:0 0 12px rgba(255,64,64,.45); animation:stamp .18s ease-out both}
 .nameplate{position:relative}
-.afk-clock{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:8; font-family:var(--cond); font-weight:700; font-size:14px; font-variant-numeric:tabular-nums; color:#fff; background:#b3191f; border:1.5px solid #ff6b6b; border-radius:6px; padding:1px 6px; line-height:1.2; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,.5); animation:afkpop .2s ease-out both}
+.afk-clock{position:absolute; inset:-1px; z-index:8; align-items:center; justify-content:center; font-family:var(--cond); font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; color:#ff3b3b; background:#050605; border:1.5px solid #ff3b3b; border-radius:7px; line-height:1; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,.5); animation:afkpop .2s ease-out both}
+.afk-clock:not([hidden]){display:flex}
 .afk-clock.running{animation:afkpop .2s ease-out both, afkpulse 1s ease-in-out infinite}
-@keyframes afkpop{from{transform:translate(-50%,-50%) scale(.4); opacity:0}to{transform:translate(-50%,-50%) scale(1); opacity:1}}
+@keyframes afkpop{from{transform:scale(.6); opacity:0}to{transform:scale(1); opacity:1}}
 @keyframes afkpulse{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,90,90,.5),0 0 14px rgba(255,64,64,.8)}}
 </style>
 
@@ -2436,7 +2437,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-125852) */
+/* Offline support + automatic updates (build 20261105-130119) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
