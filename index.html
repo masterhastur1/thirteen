@@ -495,6 +495,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .nameplate{position:relative}
 .afk-clock{position:absolute; inset:-1px; z-index:8; align-items:center; justify-content:center; font-family:var(--cond); font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; color:#ff3b3b; background:#050605; border:1.5px solid #ff3b3b; border-radius:7px; line-height:1; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,.5); animation:afkpop .2s ease-out both}
 .afk-clock:not([hidden]){display:flex}
+.afk-clock.bank{color:#fff; border-color:rgba(255,255,255,.75)}
+.afk-clock.bank.running{animation:afkpop .2s ease-out both, bankpulse 1s ease-in-out infinite}
+@keyframes bankpulse{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.35),0 0 12px rgba(255,255,255,.55)}}
 .afk-clock.running{animation:afkpop .2s ease-out both, afkpulse 1s ease-in-out infinite}
 @keyframes afkpop{from{transform:scale(.6); opacity:0}to{transform:scale(1); opacity:1}}
 @keyframes afkpulse{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,90,90,.5),0 0 14px rgba(255,64,64,.8)}}
@@ -1417,21 +1420,23 @@ function renderSeats(){
   }
   renderAfkClocks();
 }
-/* A disconnected player's remaining away time, shown to everyone once it's under a minute.
-   It counts down live while their turn is waiting on them. */
+/* A disconnected player's remaining away time, or a player's running time bank, shown to everyone
+   over their nameplate once it's under a minute. */
 function renderAfkClocks(){
   if(!M||!M.online||!G||!G.order) return;
   const c=G.clock, now=Date.now()-(NET.offset||0);
   for(let i=1;i<M.n;i++){
     const box=document.querySelector('#seat'+i+' .afk-clock'); if(!box) continue;
     const p=M.players[i], j=G.order[i];
-    let ms=null;
+    let ms=null, bank=false;
     if(p.away&&!p.left&&!G.over&&j<G.nSeats) ms=c&&c.who===j&&c.phase==='away'?Math.max(0,c.endsAt-now):G.dcLeft[i];
+    // a player whose time bank is running gets the same countdown (white numbers) once under a minute
+    else if(c&&c.who===j&&c.phase==='bank'&&!G.over){ ms=Math.max(0,c.endsAt-now); bank=true; }
     const show=ms!=null&&ms<60000;
-    box.hidden=!show; if(!show) continue;
+    box.hidden=!show; box.classList.toggle('bank',bank); if(!show) continue;
     const sec=Math.min(59,Math.ceil(ms/1000)), txt='0:'+String(sec).padStart(2,'0');
     if(box.textContent!==txt) box.textContent=txt;
-    box.classList.toggle('running',!!(c&&c.who===j&&c.phase==='away'));
+    box.classList.toggle('running',!!(c&&c.who===j&&(c.phase==='away'||c.phase==='bank')));
   }
 }
 function renderPile(){
@@ -2439,7 +2444,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-133111) */
+/* Offline support + automatic updates (build 20261105-133457) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
