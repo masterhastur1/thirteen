@@ -210,6 +210,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .rankline{position:absolute; left:50%; bottom:30px; transform:translateX(-50%); z-index:2; display:flex; align-items:center; gap:10px; white-space:nowrap; pointer-events:none}
 .rankline::before,.rankline::after{content:""; width:22px; height:1px; background:linear-gradient(90deg,transparent,rgba(217,178,99,.7))}
 .rankline::after{transform:scaleX(-1)}
+.rankline b .lc{text-transform:none}
 .rankline b{font-family:var(--cond); font-weight:600; font-size:13px; letter-spacing:.18em; text-transform:uppercase; color:var(--brass); text-shadow:0 1px 0 rgba(0,0,0,.45); opacity:.92}
 .setaside span{font-family:var(--cond); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:rgba(242,233,212,.7)}
 @keyframes land{from{transform:translateY(-14px) scale(1.06); opacity:0}}
@@ -1442,7 +1443,8 @@ function renderPile(){
   const row=(cards,top,cls,boxW)=>{const st=cards.length>1?Math.round(w*.52):0, cw=w+st*(cards.length-1), x0=(boxW-cw)/2;
     return cards.map((c,k)=>cardHTML(c,w,x0+k*st,top,cls)).join('')};
   const widthOf=cards=>w+(cards.length>1?Math.round(w*.52):0)*(cards.length-1);
-  const tag=label=>`<b>${esc(label)}</b>`;
+  // the label is shown in capitals, but plural number ranks keep a small s: "PAIR OF 9s"
+  const tag=label=>`<b>${esc(label).replace(/(\d)s\b/g,'$1<span class="lc">s</span>')}</b>`;
   if(!t&&G.openPreview&&G.cur!==0){
     const op=M.players[G.cur];
     pile.innerHTML=`<div class="pile-cards" style="width:${w}px;height:${H}px">${row([G.openCard],0,'opening',w)}</div>`;
@@ -2437,7 +2439,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-130119) */
+/* Offline support + automatic updates (build 20261105-133111) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
