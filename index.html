@@ -513,6 +513,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .pl-row b{font-family:var(--cond); font-size:20px; font-variant-numeric:tabular-nums}
 .pl-row b.pos{color:var(--ok)} .pl-row b.neg{color:#ff8f8f}
 #btn-clear-players.armed{background:#ff8a1f; border-color:#ffc27a; color:#1d1000; box-shadow:0 0 0 2px rgba(255,170,80,.55),0 0 22px 6px rgba(255,138,31,.7)}
+.adm-online{margin-left:auto; color:var(--muted); font-size:13px}
+#admin textarea,#admin input[type=text],#admin input[type=number],#admin select{background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font:15px var(--body,system-ui)}
+#admin textarea{resize:none; width:100%}
+.adm-tables{display:flex; flex-direction:column; gap:10px}
+.adm-t{border:1px solid var(--line); border-radius:11px; padding:10px; display:flex; flex-direction:column; gap:6px}
+.adm-t-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.adm-t small{color:var(--muted)}
+.adm-seats{display:flex; flex-direction:column; gap:4px}
+.adm-seat{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; min-height:34px}
+.adm-seat i{font-style:normal; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-left:4px}
+.adm-seat i.bad{color:#ff8f8f}
+.adm-acts,.adm-t-acts{display:flex; gap:6px; flex-wrap:wrap}
+.btn.sm{min-height:32px; padding:0 10px; font-size:13px}
+.btn.confirming{background:#ff8a1f!important; border-color:#ffc27a!important; color:#1d1000!important; box-shadow:0 0 0 2px rgba(255,170,80,.55),0 0 18px 4px rgba(255,138,31,.6)}
+.pill.feat{border-color:#e8c26a; color:#1d1400; background:#e8c26a}
+.tl-item.featured{border-color:rgba(232,194,106,.6)}
+#announce{position:fixed; z-index:200; top:calc(10px + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%); width:min(560px,calc(100% - 24px)); background:#1d1608; border:1.5px solid #e8c26a; border-radius:12px; padding:10px 40px 10px 14px; color:#fff; box-shadow:0 12px 30px rgba(0,0,0,.6); display:flex; flex-direction:column; gap:2px; animation:fadein .2s both}
+#announce small{font-family:var(--cond); letter-spacing:.14em; text-transform:uppercase; color:#e8c26a; font-size:11px}
+#announce button{position:absolute; top:6px; right:8px; font-size:22px; color:#fff; background:none; width:30px; height:30px}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -540,8 +559,50 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <button class="btn btn-ghost" id="btn-history">Hand history</button>
     <button class="btn btn-ghost" id="btn-rules">How to play</button>
     <button class="btn btn-ghost" id="btn-settings">Settings</button>
+    <button class="btn btn-ghost admin-only" id="btn-admin" hidden>Admin</button>
   </div>
   <p class="fineprint"><span class="net-pill" id="net-pill"><i></i><span>Offline</span></span> · <span id="who-line"></span><button class="linkish" id="btn-logout">Log out</button></p>
+</section>
+
+<!-- ============ ADMIN (only shown to the admin account; the server checks every request) ============ -->
+<section id="admin" class="screen" hidden>
+  <div class="topline">
+    <button class="icon-btn" id="admin-back" aria-label="Back to menu">‹</button>
+    <h2>Admin</h2><span class="adm-online" id="adm-online"></span>
+  </div>
+  <div class="panel">
+    <div class="label">Announcement</div>
+    <textarea id="adm-text" maxlength="200" rows="2" placeholder="Shown to everyone online, e.g. Server restart in 5 minutes"></textarea>
+    <button class="btn btn-brass" id="adm-send">Send to everyone</button>
+  </div>
+  <div class="panel">
+    <div class="label">All tables</div>
+    <div id="adm-tables" class="adm-tables"></div>
+  </div>
+  <div class="panel">
+    <div class="label">New featured table</div>
+    <p class="hint" style="margin:0">Stays open when empty and is pinned to the top of the lobby. Lasts until the server restarts; ask Claude to make one permanent.</p>
+    <input id="adm-name" type="text" maxlength="24" placeholder="Table name">
+    <div class="set-row"><span>Seats</span><div class="seg" id="adm-seats"><button data-v="2">2</button><button data-v="3">3</button><button data-v="4" aria-pressed="true">4</button></div></div>
+    <div class="set-row"><span>Scoring</span><div class="seg" id="adm-match"><button data-v="endless" aria-pressed="true">Endless</button><button data-v="target">Target</button><button data-v="casual">Casual</button></div></div>
+    <div class="set-row" id="adm-target-row" hidden><span>Target points</span><input id="adm-target" type="number" min="1" max="100" value="25" style="width:80px"></div>
+    <div class="set-row"><span>Turn</span><select id="adm-turn"><option>15</option><option>20</option><option>25</option><option selected>30</option><option>45</option><option>60</option><option>90</option></select></div>
+    <div class="set-row"><span>Time bank</span><select id="adm-bank"><option value="60">1:00</option><option value="90">1:30</option><option value="120" selected>2:00</option><option value="150">2:30</option><option value="180">3:00</option></select></div>
+    <div class="set-row"><span>Disconnect</span><select id="adm-dc"><option value="60">1:00</option><option value="90">1:30</option><option value="120" selected>2:00</option><option value="180">3:00</option><option value="240">4:00</option><option value="300">5:00</option></select></div>
+    <button class="btn btn-brass" id="adm-create">Open featured table</button>
+  </div>
+  <div class="panel">
+    <div class="label">CPU tables</div>
+    <div class="set-row"><span>Tables open</span><div class="seg" id="adm-cpu-sizes" data-multi="1"><button data-v="2">1/2</button><button data-v="3">2/3</button><button data-v="4">3/4</button></div></div>
+    <div class="set-row"><span>CPU levels</span><span><select id="adm-cpu-lo"><option value="1">Beginner</option><option value="2">Solid</option><option value="3">Strong</option><option value="4">Expert</option></select> to <select id="adm-cpu-hi"><option value="1">Beginner</option><option value="2">Solid</option><option value="3">Strong</option><option value="4">Expert</option></select></span></div>
+    <div class="set-row"><span>Scoring</span><div class="seg" id="adm-cpu-match"><button data-v="endless">Endless</button><button data-v="target">Target</button><button data-v="casual">Casual</button></div></div>
+    <button class="btn btn-ghost" id="adm-cpu-save">Save CPU tables</button>
+  </div>
+  <div class="panel">
+    <div class="label">Banned</div>
+    <div id="adm-banned"></div>
+    <p class="hint" style="margin:0">Bans last until the server restarts. For a permanent ban, also ban the account in Supabase (Authentication → Users).</p>
+  </div>
 </section>
 
 <!-- ============ SETTINGS ============ -->
@@ -934,7 +995,7 @@ function cardHTML(c,w,x,y,extra=''){
   const red=c.s===1||c.s===2, fc=c.r>=8&&c.r<=10;
   return `<div class="card ${red?'red':''} s${c.s} ${extra}" data-id="${c.id}" style="--w:${w}px;left:${x}px;${y!=null?'top:'+y+'px;':''}" aria-label="${RANKS[c.r]} of ${SUITN[c.s]}s"><span class="tl">${RANKS[c.r]}<i>${SUITS[c.s]}</i></span>${fc?`<span class="face">${RANKS[c.r]}</span>`:`<span class="pip">${SUITS[c.s]}</span>`}</div>`;
 }
-function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile'].forEach(s=>$('#'+s).hidden=s!==id)}
+function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile','admin'].forEach(s=>$('#'+s).hidden=s!==id); if(id!=='admin'&&window.NET&&NET.adminOpen){ NET.adminOpen=false; NET.send({t:'admin',op:'closeView'}); }}
 let toastT;
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast'+(kind?' '+kind:'');t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,kind==='info'?2200:3200)}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -1444,7 +1505,7 @@ function renderSeats(){
    over their nameplate once it's under a minute. */
 function renderAfkClocks(){
   if(!M||!M.online||!G||!G.order) return;
-  const c=G.clock, now=Date.now()-(NET.offset||0);
+  const c=G.clock, now=G.pausedAt||Date.now()-(NET.offset||0);
   for(let i=1;i<M.n;i++){
     const box=document.querySelector('#seat'+i+' .afk-clock'); if(!box) continue;
     const p=M.players[i], j=G.order[i];
@@ -1511,9 +1572,10 @@ function renderHand(){
   box.innerHTML=h.map((c,i)=>cardHTML(c,w,off+i*step,null,(sel.has(c.id)?'sel ':'')+(h.length===1&&!G.dealing?'last ':'')+(G.openPreview&&G.openCard.id===c.id?'opening':''))).join('');
 }
 function renderStatus(){
-  const me=G.cur===0&&!G.over&&!G.openPreview&&!G.dealing, st=$('#status');
+  const me=G.cur===0&&!G.over&&!G.openPreview&&!G.dealing&&!G.paused, st=$('#status');
   let msg='';
   if(G.over) msg='';
+  else if(G.paused) msg='<b>Paused by the admin.</b> The game will continue shortly.';
   else if(G.spectator) msg='<b>You\'re in.</b> You\'ll be dealt in when the next game starts.';
   else if(G.lapDone) msg='<b>Final lap complete.</b> Counting the cards…';
   else if(G.dealing) msg='Dealing…'+(G.commit?` <span style="color:var(--muted);font-size:12px">Deal ID ${G.commit.hash.slice(0,8)}</span>`:'');
@@ -1914,8 +1976,9 @@ function renderLobby(){
   const modeKey=t=>(t.cpuRoom?0:3)+['endless','target','casual'].indexOf(t.match);
   list.sort(LB.sort==='seats'?(a,b)=>dir*(a.players.length-b.players.length)||modeKey(a)-modeKey(b)
     :(a,b)=>(LB.modeDir==='desc'?1:-1)*(modeKey(a)-modeKey(b)||b.players.length-a.players.length||a.age-b.age));
+  list.sort((a,b)=>(b.dedicated?1:0)-(a.dedicated?1:0));   // featured tables are pinned to the top
   $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
-    return `<button class="tl-item${full?' full':''}" data-id="${t.id}" ${full?'disabled':''}><b>${esc(t.host)}'s table</b>
+    return `<button class="tl-item${full?' full':''}${t.dedicated?' featured':''}" data-id="${t.id}" ${full?'disabled':''}><b>${t.dedicated?'<span class="pill feat">★ Featured</span> '+esc(t.dedicated):esc(t.host)+"'s table"}</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
       <span class="meta">${t.cpuRoom?'<span class="pill cpu">CPU</span>':'<span class="pill live">Players</span>'}${matchLabel(t)} · ${t.turn}s turns · ${fmt(t.bank)} bank</span>${t.inProgress?'<span class="inprog">In progress</span>':''}</button>`}).join('')
     :`<p class="hint" style="text-align:center;padding:20px 0">${LB.filter==='online'?(NET.ready?'No one is hosting a table right now. Create one, or join a private game.':'Log in to play at tables hosted by other players.'):'No tables match. Try another filter or create one.'}</p>`;
@@ -2241,7 +2304,9 @@ const NET={ws:null,ready:false,want:false,token:null,me:null,table:null,view:nul
 
 function onServer(m){
   switch(m.t){
-    case 'welcome': NET.ready=true; NET.me=m.id; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); break;
+    case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
+    case 'admin': renderAdmin(m); break;
+    case 'announce': announce(m.text); break;
     case 'error': toast(m.msg); break;
     case 'toast': toast(m.msg,'info'); break;
     case 'lobby': NET.lobby=m.tables; NET.table=null;
@@ -2259,8 +2324,8 @@ const _renderLobby=renderLobby;
 renderLobby=function(){
   if(!NET.ready) return _renderLobby();
   // shape server listings like the offline ones so the same list, filter and sort code draws them
-  LB.tables=NET.lobby.map((t,k)=>({id:t.id,online:true,cpuRoom:t.cpuRoom,host:t.host,seats:t.seats,players:[t.host,...Array(Math.max(0,t.filled-1)).fill('')],
-    inProgress:!!t.inProgress,bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
+  LB.tables=NET.lobby.map((t,k)=>({id:t.id,online:true,cpuRoom:t.cpuRoom,host:t.host,seats:t.seats,players:t.filled?[t.host,...Array(t.filled-1).fill('')]:[],
+    inProgress:!!t.inProgress,dedicated:t.dedicated||null,bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
   const save=window.ensureCpuRooms; ensureCpuRooms=()=>{}; _renderLobby(); ensureCpuRooms=save;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>NET.send({t:'join',id:b.dataset.id}));
 };
@@ -2293,7 +2358,7 @@ function onTable(t){
 }
 function renderNetWaiting(t){
   const me=t.you, LVLN=['','Beginner','Solid','Strong','Expert'];
-  $('#wr-title').textContent=t.private||(t.isHost?'Your table':`${t.seats[t.host]?t.seats[t.host].name:'Open'}’s table`);
+  $('#wr-title').textContent=t.dedicated||t.private||(t.isHost?'Your table':`${t.seats[t.host]?t.seats[t.host].name:'Open'}’s table`);
   const r=t.rules;
   $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">${t.private?'<span>Lobby <b>Private</b></span>':''}
     <span>Scoring <b>${matchLabel(r)}</b></span>
@@ -2349,7 +2414,7 @@ function applyView(v){
     openPreview:v.phase==='opening',dealing:v.phase==='dealing',shown:hand.length,got:order.map(j=>j<n?13:0),
     finalLap:v.finalLap?{}:null,lapDone:v.lapDone,over:v.phase==='over',action:order.map(j=>j<n?v.seats[j].action:null),
     bank:Array(total).fill(v.bank/1000),turnLeft:0,bankActive:false,log:[],clock:v.clock,leftover:0,
-    order,nSeats:n,dcLeft:order.map(j=>j<n?v.seats[j].dcLeft||0:0)};
+    paused:!!v.paused,pausedAt:v.paused?v.pausedAt:null,order,nSeats:n,dcLeft:order.map(j=>j<n?v.seats[j].dcLeft||0:0)};
   if(G.table) G.table.by=rot(G.table.by); if(G.prev) G.prev.by=rot(G.prev.by);
   if(v.openCard!=null) G.openCard=idCard(v.openCard);
   if(!G.openCard&&v.opening) G.openCard=hand.filter(c=>c.s===0).sort((a,b)=>a.id-b.id)[0]||null;
@@ -2369,7 +2434,7 @@ function applyView(v){
 }
 function clockTick(){
   if(!G||!G.online) return clearInterval(netTick);
-  const c=G.clock, now=Date.now()-NET.offset;
+  const c=G.clock, now=G.pausedAt||Date.now()-NET.offset;
   G.turnLeft=0; G.bankActive=false;
   if(c&&c.who===NET.view.you){ const left=Math.max(0,(c.endsAt-now)/1000);
     if(c.phase==='turn') G.turnLeft=left; else if(c.phase==='bank'){ G.bankActive=true; G.bank[0]=left; } }
@@ -2428,6 +2493,78 @@ function showNetSummary(t){
   tick(); netSumT=setInterval(tick,500);
 }
 
+/* ----- admin (the account in the server's ADMIN_IDS only; the server checks every request) ----- */
+// two taps for anything that can't be undone: the first lights the button orange, the second does it
+function twoTap(btn,label,run){
+  btn.onclick=()=>{
+    if(!btn.classList.contains('confirming')){ document.querySelectorAll('.confirming[data-two]').forEach(b=>{b.classList.remove('confirming');b.textContent=b.dataset.two}); btn.dataset.two=btn.textContent; btn.classList.add('confirming'); btn.textContent=label;
+      clearTimeout(btn._t); btn._t=setTimeout(()=>{ if(btn.classList.contains('confirming')){ btn.classList.remove('confirming'); btn.textContent=btn.dataset.two; } },5000); return; }
+    btn.classList.remove('confirming'); btn.textContent=btn.dataset.two; run();
+  };
+}
+const ADM={seats:4,match:'endless',cpu:null};
+function openAdmin(){ if(!NET.admin) return; NET.adminOpen=true; show('admin'); NET.adminOpen=true; NET.send({t:'admin',op:'open'}); }
+$('#btn-admin').onclick=openAdmin;
+$('#admin-back').onclick=()=>show('menu');
+function admSeg(sel,key,obj,multi){
+  document.querySelectorAll(sel+' button').forEach(b=>b.onclick=()=>{
+    if(multi){ b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'); return; }
+    obj[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;
+    document.querySelectorAll(sel+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    if(sel==='#adm-match') $('#adm-target-row').hidden=obj[key]!=='target';
+  });
+}
+admSeg('#adm-seats','seats',ADM); admSeg('#adm-match','match',ADM);
+admSeg('#adm-cpu-sizes',null,null,true);
+const CPUM={match:'endless'}; admSeg('#adm-cpu-match','match',CPUM);
+twoTap($('#adm-send'),'Tap again to send',()=>{ const v=$('#adm-text').value.trim(); if(!v) return toast('Write a message first.'); NET.send({t:'admin',op:'announce',text:v}); $('#adm-text').value=''; });
+$('#adm-create').onclick=()=>{
+  const name=$('#adm-name').value.trim(); if(!name) return toast('Give the table a name.');
+  NET.send({t:'admin',op:'dedicated',name,seats:ADM.seats,match:ADM.match,target:+$('#adm-target').value||25,turn:+$('#adm-turn').value,bank:+$('#adm-bank').value,dc:+$('#adm-dc').value});
+  $('#adm-name').value='';
+};
+$('#adm-cpu-save').onclick=()=>{
+  const sizes=[...document.querySelectorAll('#adm-cpu-sizes button[aria-pressed="true"]')].map(b=>+b.dataset.v);
+  NET.send({t:'admin',op:'cpuConfig',sizes,minLevel:+$('#adm-cpu-lo').value,maxLevel:+$('#adm-cpu-hi').value,match:CPUM.match});
+};
+function renderAdmin(m){
+  if(!NET.admin) return;
+  $('#adm-online').textContent=`${m.online} online`;
+  if(!ADM.cpuSet&&m.cpu){ ADM.cpuSet=true; const c=m.cpu;
+    document.querySelectorAll('#adm-cpu-sizes button').forEach(b=>b.setAttribute('aria-pressed',c.sizes.includes(+b.dataset.v)));
+    $('#adm-cpu-lo').value=c.minLevel; $('#adm-cpu-hi').value=c.maxLevel; CPUM.match=c.match;
+    document.querySelectorAll('#adm-cpu-match button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===c.match)); }
+  const kind={dedicated:'★ Featured',cpu:'CPU',private:'Private',public:'Public'};
+  const ago=t=>{const s=Math.max(0,(Date.now()-t)/1000); return s<60?'just now':s<3600?Math.floor(s/60)+'m':Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m'};
+  const state=t=>t.state==='playing'?(t.paused?'Paused':'Playing'+(t.gameStartedAt?' · game '+ago(t.gameStartedAt):'')):t.state==='summary'?'Between games':'Waiting for players';
+  const hold=document.querySelector('#adm-tables .confirming');
+  if(hold) return;   // don't redraw under a half-confirmed button
+  $('#adm-tables').innerHTML=m.tables.length?m.tables.map(t=>`<div class="adm-t" data-id="${t.id}">
+      <div class="adm-t-head"><b>${esc(t.name)}</b><span class="pill ${t.kind==='dedicated'?'feat':t.kind==='cpu'?'cpu':'live'}">${kind[t.kind]}</span></div>
+      <small>${state(t)} · ${t.seats.length}/${t.max} seats · ${matchLabel(t.rules)} · open ${ago(t.createdAt)}</small>
+      <div class="adm-seats">${t.seats.map(x=>`<div class="adm-seat"><span>${esc(x.name)}${x.host?' <i>host</i>':''}${x.cpu?' <i>CPU</i>':''}${x.left?' <i class="bad">left</i>':!x.connected?' <i class="bad">away</i>':''}</span>
+        ${x.cpu||x.id===NET.me?'':`<span class="adm-acts"><button class="btn btn-ghost sm" data-kick="${x.id}">Remove</button><button class="btn btn-ghost sm" data-ban="${x.id}" data-name="${esc(x.name)}">Ban</button></span>`}</div>`).join('')}
+        ${t.waiting.map(x=>`<div class="adm-seat"><span>${esc(x.name)} <i>waiting</i></span><span class="adm-acts"><button class="btn btn-ghost sm" data-kick="${x.id}">Remove</button><button class="btn btn-ghost sm" data-ban="${x.id}">Ban</button></span></div>`).join('')}</div>
+      <div class="adm-t-acts">${t.state==='playing'?`<button class="btn btn-ghost sm" data-pause>${t.paused?'Resume game':'Pause game'}</button><button class="btn btn-ghost sm" data-end>End game</button>`:''}<button class="btn btn-ghost sm" data-close>Close table</button></div>
+    </div>`).join(''):'<p class="hint">No tables open.</p>';
+  document.querySelectorAll('.adm-t').forEach(el=>{
+    const id=el.dataset.id;
+    const p=el.querySelector('[data-pause]'); if(p) p.onclick=()=>NET.send({t:'admin',op:'pause',id});
+    const e=el.querySelector('[data-end]'); if(e) twoTap(e,'Tap again to end',()=>NET.send({t:'admin',op:'end',id}));
+    twoTap(el.querySelector('[data-close]'),'Tap again to close',()=>NET.send({t:'admin',op:'close',id}));
+    el.querySelectorAll('[data-kick]').forEach(b=>twoTap(b,'Confirm',()=>NET.send({t:'admin',op:'kick',id,user:b.dataset.kick})));
+    el.querySelectorAll('[data-ban]').forEach(b=>twoTap(b,'Confirm ban',()=>NET.send({t:'admin',op:'ban',id,user:b.dataset.ban})));
+  });
+  $('#adm-banned').innerHTML=m.banned.length?m.banned.map(b=>`<div class="adm-seat"><span>${esc(b.name)}</span><button class="btn btn-ghost sm" data-unban="${b.id}">Unban</button></div>`).join(''):'<p class="hint" style="margin:0">No one is banned.</p>';
+  document.querySelectorAll('[data-unban]').forEach(b=>b.onclick=()=>NET.send({t:'admin',op:'unban',user:b.dataset.unban}));
+}
+/* an announcement from the admin: a banner across the top for everyone online */
+function announce(text){
+  let el=$('#announce'); if(!el){ el=document.createElement('div'); el.id='announce'; el.setAttribute('role','alert'); document.body.appendChild(el); el.onclick=()=>el.hidden=true; }
+  el.innerHTML=`<small>Announcement</small><span></span><button aria-label="Dismiss">×</button>`; el.querySelector('span').textContent=text; el.hidden=false;
+  clearTimeout(announce.t); announce.t=setTimeout(()=>el.hidden=true,12000);
+}
+
 /* ----- sign in, guests and offline ----- */
 function loginErr(msg){ const e=$('#login-err'); e.textContent=msg||''; e.hidden=!msg; }
 function enterOnline(sess,guest){
@@ -2475,7 +2612,7 @@ $('#btn-google').onclick=async()=>{
 };
 $('#btn-guest').onclick=()=>{ loginErr(''); $('#login-pass').value=''; enterOnline(null,true); };
 $('#btn-offline').onclick=()=>{ loginErr(''); NET.disconnect(); startSession(false); $('#who-line').textContent='Offline · '; show('menu'); };
-$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; show('login'); };
+$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; show('login'); };
 if(sb){
   // keep the server's copy of your sign-in fresh, finish Google / email-link sign-ins, and handle password resets
   sb.auth.onAuthStateChange((event,sess)=>{
@@ -2497,7 +2634,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-142047) */
+/* Offline support + automatic updates (build 20261105-143902) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
