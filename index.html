@@ -539,6 +539,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 #announce button{position:absolute; top:6px; right:8px; font-size:22px; color:#fff; background:none; width:30px; height:30px}
 .create-tabs{flex:none}
 .inv-input{background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:16px var(--body,system-ui); width:100%}
+.seat.ghost .ghost-av,.ghost-av{display:grid; place-items:center; background:rgba(255,255,255,.14)!important; border:2px dashed rgba(255,255,255,.55); color:#fff; font-size:40px; font-weight:300; line-height:1; box-shadow:none; cursor:pointer}
+.seat.ghost .ghost-av:active,.join-seat:active .ghost-av{background:rgba(255,255,255,.26)!important}
+.join-seat{position:absolute; inset:8px 0; display:flex; align-items:center; justify-content:center; gap:14px; color:var(--cream,#eee); background:none; border:0}
+.join-seat .ghost-av{width:64px; height:64px; border-radius:50%; flex:none}
+.join-seat b{display:block; font-size:17px} .join-seat small{display:block; color:var(--muted); font-size:13px; margin-top:2px}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -1454,13 +1459,18 @@ function buildSeats(){
   SEATS[M.n].forEach((pos,i)=>{
     if(i===0) return;
     const p=M.players[i], d=document.createElement('div');
-    d.className='seat '+pos; d.id='seat'+i;
+    d.className='seat '+pos+(p.ghost?' ghost':''); d.id='seat'+i;
+    if(p.ghost){ // an open seat in a game that started short-handed
+      d.innerHTML=`<button class="avatar ghost-av" data-ghost="${i}" aria-label="${G&&G.viewer?'Take this seat':'Invite a player to this seat'}">+</button>`;
+      table.appendChild(d); return;
+    }
     d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>WAITING</div><div class="afk-stamp" hidden>AFK</div><div class="time-stamp" hidden>TIME</div></div>
       <div class="nameplate"><b>${plateName(p.name)}</b><span class="afk-clock" hidden></span></div>`;
     table.appendChild(d);
   });
 }
 function seatState(i){
+  if(M.players[i]&&M.players[i].ghost) return 'ghost';
   if(M.players[i]&&M.players[i].waiting) return 'waiting';
   if(G.dealing) return '';
   if(G.hands[i]&&G.hands[i].length===0&&(G.finalLap||G.lapDone||G.over)) return 'out';
@@ -1497,7 +1507,7 @@ $('#table').addEventListener('click',e=>{
 });
 function renderSeats(){
   for(let i=1;i<M.n;i++){
-    const el=$('#seat'+i); if(!el) continue;
+    const el=$('#seat'+i); if(!el||M.players[i].ghost) continue;
     const st=seatState(i);
     ['turn','ontop','passed','out','waiting'].forEach(c=>el.classList.toggle(c,st===c));
     const afk=!!(M.online&&M.players[i].away&&!G.over);
@@ -1516,7 +1526,7 @@ function renderAfkClocks(){
   if(!M||!M.online||!G||!G.order) return;
   const c=G.clock, now=G.pausedAt||Date.now()-(NET.offset||0);
   for(let i=1;i<M.n;i++){
-    const box=document.querySelector('#seat'+i+' .afk-clock'); if(!box) continue;
+    const box=document.querySelector('#seat'+i+' .afk-clock'); if(!box||M.players[i].ghost) continue;
     const p=M.players[i], j=G.order[i];
     let ms=null, bank=false;
     if(p.away&&!p.left&&!G.over&&j<G.nSeats) ms=c&&c.who===j&&c.phase==='away'?Math.max(0,c.endsAt-now):G.dcLeft[i];
@@ -1579,12 +1589,15 @@ function renderHand(){
   const off=Math.max(0,(cw-(w+step*(h.length-1)))/2);
   L={off,step,w};
   box.innerHTML=h.map((c,i)=>cardHTML(c,w,off+i*step,null,(sel.has(c.id)?'sel ':'')+(h.length===1&&!G.dealing?'last ':'')+(G.openPreview&&G.openCard.id===c.id?'opening':''))).join('');
+  // watching a game in progress: the open seat at the bottom is yours to take
+  if(G.viewer&&M.players[0]&&M.players[0].ghost) box.innerHTML=`<button class="join-seat" data-ghost="0"><span class="ghost-av">+</span><span><b>Take this seat</b><small>You'll be dealt in when the next game starts.</small></span></button>`;
 }
 function renderStatus(){
   const me=G.cur===0&&!G.over&&!G.openPreview&&!G.dealing&&!G.paused, st=$('#status');
   let msg='';
   if(G.over) msg='';
   else if(G.paused) msg='<b>Paused by the admin.</b> The game will continue shortly.';
+  else if(G.viewer) msg=M.players.some(p=>p.ghost)?'<b>Watching.</b> Tap an open seat to be dealt in next game.':'<b>Watching.</b> This table is full right now.';
   else if(G.spectator) msg='<b>You\'re in.</b> You\'ll be dealt in when the next game starts.';
   else if(G.lapDone) msg='<b>Final lap complete.</b> Counting the cards…';
   else if(G.dealing) msg='Dealing…'+(G.commit?` <span style="color:var(--muted);font-size:12px">Deal ID ${G.commit.hash.slice(0,8)}</span>`:'');
@@ -1798,6 +1811,7 @@ function showBreakdown(){
 };
 $('#btn-leave').onclick=()=>{
   if(G&&G.over) return;
+  if(G&&(G.viewer||G.spectator)) return leave();   // only watching: nothing to lose
   openSheet(`<h3>Leave this match?</h3><p>The current game and the match tally will be lost.</p><div class="row"><button class="btn btn-ghost" id="lv-stay">Keep playing</button><button class="btn btn-brass" id="lv-go">Leave</button></div>`);
   $('#lv-stay').onclick=closeSheet; $('#lv-go').onclick=leave;
 };
@@ -2010,7 +2024,17 @@ $('#setup-tabs [data-v=online]').onclick=()=>{
 $('#nt-tabs [data-v=cpu]').onclick=()=>{renderSetup();show('setup')};
 /* Invite a friend (the base for invites; they start working once there's a friends list or an online player list) */
 document.addEventListener('click',e=>{
-  if(!e.target.closest('[data-invite]')) return;
+  if(e.target.closest('[data-ghost]')) return ghostTap();
+  if(e.target.closest('[data-invite]')) openInvite();
+});
+/* An open seat at a game in progress: people watching take it (dealt in next game); players at the table invite someone */
+function ghostTap(){
+  if(!G||!G.online) return;
+  if(G.viewer) return NET.send({t:'sit'});
+  if(G.spectator) return toast('You\'re already in line for the next game.','info');
+  openInvite();
+}
+function openInvite(){
   openSheet(`<h3>Invite a friend</h3>
     <input id="inv-name" type="text" maxlength="16" placeholder="Screen name" autocomplete="off" autocapitalize="off" spellcheck="false" class="inv-input">
     <button class="btn btn-brass" id="inv-send">Invite</button>`);
@@ -2019,7 +2043,7 @@ document.addEventListener('click',e=>{
     // the server side of invites comes with the friends list; nothing is sent yet
     closeSheet(); toast(`Invite to ${nm} noted. Invites start working once the friends list is added.`,'info'); };
   $('#inv-send').onclick=send; i.onkeydown=ev=>{ if(ev.key==='Enter') send(); };
-});
+}
 function renderNewTable(){
   const mark=(id,v)=>$(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(v)));
   mark('#nt-seats',draft.seats); mark('#nt-match',draft.match); draft.play='live'; mark('#nt-dc',draft.dc);
@@ -2424,19 +2448,21 @@ let netTick=null;
 function applyView(v){
   const n=v.seats.length, t=NET.table, spectator=v.you<0, fresh=!G||!G.online||G.commitHash!==v.commit||G.spectator!==spectator;
   // players waiting for the next deal sit after the dealt-in seats (up to 4 around the table)
-  const wl=(v.waiting||[]).slice(0,Math.max(0,4-n)), total=n+wl.length;
-  const base=spectator?n+Math.min(v.waitIdx||0,wl.length-1):v.you;
+  const wl=(v.waiting||[]).slice(0,Math.max(0,4-n));
+  // open seats in a game that started short-handed show as blank avatars with a +
+  const ghosts=Math.max(0,Math.min(4,v.max||n)-n-wl.length), total=n+wl.length+ghosts, viewer=!!v.viewer;
+  const base=viewer?(ghosts?n+wl.length:0):spectator?n+Math.min(v.waitIdx||0,wl.length-1):v.you;
   // seats are reordered so you are always seat 0, as in offline play
   const order=[...Array(total).keys()].map(k=>(base+k)%total), rot=j=>j<0?-1:order.indexOf(j);
-  const slot=j=>j<n?v.seats[j]:{name:wl[j-n].name,avatar:wl[j-n].avatar,cpu:false,connected:true,waiting:true,action:null};
-  M={n:total,online:true,table:true,players:order.map((j,k)=>{const s=slot(j); return {name:k===0?'You':s.name,cpu:s.cpu,level:s.level,connected:s.connected,away:!!s.away,left:!!s.left,waiting:!!s.waiting,color:COLORS[k],tag:s.cpu?'CPU':'PLAYER'}}),
+  const slot=j=>j<n?v.seats[j]:j<n+wl.length?{name:wl[j-n].name,avatar:wl[j-n].avatar,cpu:false,connected:true,waiting:true,action:null}:{name:'',cpu:false,connected:true,ghost:true,action:null};
+  M={n:total,online:true,table:true,players:order.map((j,k)=>{const s=slot(j); return {name:k===0?'You':s.name,cpu:s.cpu,level:s.level,connected:s.connected,away:!!s.away,left:!!s.left,waiting:!!s.waiting,ghost:!!s.ghost,color:COLORS[k],tag:s.cpu?'CPU':'PLAYER'}}),
     play:v.rules.play,match:t?t.rules.match:'endless',target:t?t.rules.target:25,bankOn:v.bankOn,turnTime:v.rules.turn,bankTime:v.rules.bank,
     bal:order.map(a=>order.map(b=>t&&a<n&&b<n&&t.ledger[a]?t.ledger[a][b]||0:0))};
   const prevHand=fresh?[]:G.hands[0], ids=new Set(v.hand);
   const hand=prevHand.filter(c=>ids.has(c.id)); v.hand.forEach(id=>{ if(!hand.some(c=>c.id===id)) hand.push(idCard(id)); });
   [...sel].forEach(id=>{ if(!ids.has(id)) sel.delete(id); });
   const keep=fresh?{autoPass:false,confirmSpade:false}:{autoPass:G.autoPass,confirmSpade:G.confirmSpade,passArmed:G.passArmed};
-  G={online:true,spectator,commitHash:v.commit,commit:{hash:v.commit},...keep,
+  G={online:true,spectator,viewer,commitHash:v.commit,commit:{hash:v.commit},...keep,
     hands:order.map((j,k)=>k===0?hand:j>=n?[]:Array(v.seats[j].out?0:v.seats[j].oneCard?1:2).fill(null)),
     cur:v.cur<0?-1:rot(v.cur),table:pubPlay(v.table),prev:pubPlay(v.prev),opening:v.opening,openCard:G&&!fresh&&G.openCard||null,
     openPreview:v.phase==='opening',dealing:v.phase==='dealing',shown:hand.length,got:order.map(j=>j<n?13:0),
@@ -2448,7 +2474,7 @@ function applyView(v){
   if(!G.openCard&&v.opening) G.openCard=hand.filter(c=>c.s===0).sort((a,b)=>a.id-b.id)[0]||null;
   if(fresh){ sortMode=null; $('#sort-mode').textContent='None'; setAutoPass(false); }
   if($('#game').hidden){ if(!(t&&t.state==='summary')) $('#overlay').hidden=true; show('game'); }
-  const seatSig=order.map(j=>slot(j).name+(j>=n?'*':'')).join('|');
+  const seatSig=(viewer?'v':'')+order.map(j=>slot(j).ghost?'+':slot(j).name+(j>=n?'*':'')).join('|');
   if(fresh||!$('#table').querySelector('.seat')||applyView.sig!==seatSig) buildSeats();
   applyView.sig=seatSig;
   $('#game').classList.toggle('spectating',spectator);
@@ -2499,7 +2525,7 @@ function showNetSummary(t){
     <h3>${champ?(s.champ===me?'You win the match!':esc(t.seats[s.champ].name)+' wins the match'):esc(head)}</h3>
     ${r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
     <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
-    ${me<0?'<p class="hint" style="text-align:center">You\'re waiting at this table. You\'ll be dealt in when the next game starts.</p>':''}
+    ${me<0?`<p class="hint" style="text-align:center">${t.viewer?'You\'re watching this table. Tap an open seat once the next game starts to join in.':'You\'re waiting at this table. You\'ll be dealt in when the next game starts.'}</p>`:''}
     <p class="brk-status" id="ns-status"></p>
     ${champ||me<0?'':`<div class="brk-row">
       <button class="btn btn-ghost" id="ns-pause" ${!t.isHost&&!two?'disabled':''}>${s.hostPause?'Unpause':'Pause'}</button>
@@ -2662,7 +2688,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-151056) */
+/* Offline support + automatic updates (build 20261105-152804) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
