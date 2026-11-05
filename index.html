@@ -736,7 +736,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   </div>
   <div class="table-list" id="table-list"></div>
   <button class="btn btn-brass" id="btn-newtable">Create table</button>
-  <p class="hint" style="text-align:center"><span id="lobby-note">Offline: every other seat is a CPU with its own difficulty level.</span></p>
+  <p class="online-count" id="lobby-online" hidden></p>
 </section>
 
 <!-- ============ CREATE TABLE ============ -->
@@ -2360,7 +2360,7 @@ const NET={ws:null,ready:false,want:false,token:null,me:null,table:null,view:nul
     this.ws=ws;
     ws.onopen=()=>{ this.retry=0; ws.send(JSON.stringify({t:'hello',token:this.token||undefined,guestId:session.guest?store.get('thirteen.guestId',undefined):undefined,name:profile.name,avatar:{color:profile.color,animal:profile.animal}})); };
     ws.onmessage=ev=>{ let m; try{m=JSON.parse(ev.data)}catch(e){return} onServer(m); };
-    ws.onclose=()=>{ this.ready=false; this.ws=null; $('#menu-online').hidden=true;
+    ws.onclose=()=>{ this.ready=false; this.ws=null; $('#menu-online').hidden=true; $('#lobby-online').hidden=true;
       if(!this.want) return this.status('','Offline');
       this.status('wait','Reconnecting…'); const d=Math.min(15000,1000*2**this.retry++); setTimeout(()=>{ if(this.want) this.connect(); },d); };
     ws.onerror=()=>{};
@@ -2372,7 +2372,7 @@ function onServer(m){
   switch(m.t){
     case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; if(m.pid) setPlayerId(m.pid); $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
     case 'admin': renderAdmin(m); break;
-    case 'online': { const el=$('#menu-online'); el.innerHTML=`<span class="dot-live"></span>${m.n} player${m.n===1?'':'s'} online`; el.hidden=false; break; }
+    case 'online': ['#menu-online','#lobby-online'].forEach(id=>{ const el=$(id); el.innerHTML=`<span class="dot-live"></span>${m.n} player${m.n===1?'':'s'} online`; el.hidden=false; }); break;
     case 'announce': announce(m.text); break;
     case 'error': toast(m.msg); break;
     case 'toast': toast(m.msg,'info'); break;
@@ -2696,7 +2696,7 @@ $('#btn-google').onclick=async()=>{
 };
 $('#btn-guest').onclick=()=>{ loginErr(''); $('#login-pass').value=''; enterOnline(null,true); };
 $('#btn-offline').onclick=()=>{ loginErr(''); NET.disconnect(); startSession(false); $('#who-line').textContent='Offline · '; show('menu'); };
-$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; account.pid=null; store.set('thirteen.profile',account); $('#menu-online').hidden=true; show('login'); };
+$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; account.pid=null; store.set('thirteen.profile',account); $('#menu-online').hidden=true; $('#lobby-online').hidden=true; show('login'); };
 if(sb){
   // keep the server's copy of your sign-in fresh, finish Google / email-link sign-ins, and handle password resets
   sb.auth.onAuthStateChange((event,sess)=>{
@@ -2718,7 +2718,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-183839) */
+/* Offline support + automatic updates (build 20261105-184304) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
