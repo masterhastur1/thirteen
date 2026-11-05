@@ -708,7 +708,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 <!-- ============ LOBBY ============ -->
 <section id="lobby" class="screen" hidden>
   <div class="lobby-tools">
-    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="cpu">CPU</button><button data-v="online">Online</button></div></div>
+    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="online">Online</button><button data-v="cpu">CPU</button></div></div>
     <div class="lobby-tools-row">
       <button class="sort-btn" id="lb-sort-btn"><span>Sort</span><i class="tri" aria-hidden="true"></i></button>
       <button class="priv-btn" id="lb-private"><span class="lock" aria-hidden="true"></span>Private</button>
@@ -2662,7 +2662,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-150355) */
+/* Offline support + automatic updates (build 20261105-151056) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
