@@ -597,7 +597,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 <!-- ============ LOBBY ============ -->
 <section id="lobby" class="screen" hidden>
   <div class="lobby-tools">
-    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="live">Live</button><button data-v="online">Online</button></div></div>
+    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="cpu">CPU</button><button data-v="online">Online</button></div></div>
     <div class="lobby-tools-row">
       <div class="sort-wrap">
         <button class="sort-btn" id="lb-sort-btn" aria-haspopup="menu" aria-expanded="false">Sort <b id="lb-sort-cur">Mode</b><span class="chev" aria-hidden="true">▾</span></button>
@@ -631,15 +631,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <div class="target-row" id="nt-target-row"><input type="range" id="nt-target" min="1" max="100" step="1" aria-label="Target score"><output id="nt-target-out">25</output></div>
   </div>
   <div class="panel">
-    <div class="label">Play mode</div>
-    <div class="seg" id="nt-play"><button data-v="live">Live</button><button data-v="online">Online</button></div>
+    <div class="label">Timers</div>
     <div id="nt-live-timers" style="display:flex;flex-direction:column;gap:12px">
       <div class="stepper"><span>Turn timer</span><button class="icon-btn" data-step="turn:-5" aria-label="Shorter turn timer">−</button><b id="nt-turn">30s</b><button class="icon-btn" data-step="turn:5" aria-label="Longer turn timer">+</button></div>
       <div class="stepper"><span>Time bank</span><button class="icon-btn" data-step="bank:-30" aria-label="Smaller time bank">−</button><b id="nt-bank">2:00</b><button class="icon-btn" data-step="bank:30" aria-label="Bigger time bank">+</button></div>
       <div class="set-row"><span>Disconnect timer<small>How long play waits for a player who drops out</small></span>
         <div class="seg" id="nt-dc"><button data-v="60">1:00</button><button data-v="90">1:30</button><button data-v="120">2:00</button><button data-v="180">3:00</button><button data-v="240">4:00</button><button data-v="300">5:00</button></div></div>
     </div>
-    <p class="hint" id="nt-online-note" hidden>Online tables give each player 1 day per move, so turn and disconnect timers don't apply.</p>
   </div>
   <div class="panel">
     <div class="toggle-row" style="background:none;border:0;padding:0">
@@ -700,11 +698,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <p class="hint" id="match-hint"></p>
   </div>
   <div class="panel">
-    <div class="label">Play mode</div>
-    <div class="seg" id="seg-play">
-      <button data-v="live">Live</button><button data-v="online" disabled>Online</button>
-    </div>
-    <p class="hint">Live: 30 seconds a turn plus a 2-minute time bank each deal. Online (1 day per move) comes after the prototype.</p>
+    <div class="label">Timers</div>
+    <p class="hint">30 seconds a turn plus a 2-minute time bank each deal.</p>
   </div>
   <button class="btn btn-brass" id="btn-start">Deal the cards</button>
 </section>
@@ -977,7 +972,7 @@ function segBind(id,key,after){
 }
 function renderSetup(){
   const mark=(id,v)=>$(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(v)));
-  mark('#seg-cpus',setup.cpus); mark('#seg-match',setup.match); mark('#seg-play',setup.play);
+  mark('#seg-cpus',setup.cpus); mark('#seg-match',setup.match); setup.play='live';
   const box=$('#cpu-levels'); box.innerHTML='';
   for(let i=0;i<setup.cpus;i++){
     const row=document.createElement('div'); row.className='cpu-row';
@@ -990,7 +985,7 @@ function renderSetup(){
   $('#target').value=setup.target; $('#target-out').textContent=setup.target;
   $('#match-hint').textContent={endless:'Points carry over from game to game with no end.',target:'First player whose net total reaches the target wins the match.',casual:'No tally between games. Each game stands alone.'}[setup.match];
 }
-segBind('#seg-cpus','cpus'); segBind('#seg-match','match'); segBind('#seg-play','play');
+segBind('#seg-cpus','cpus'); segBind('#seg-match','match');
 $('#target').oninput=e=>{setup.target=+e.target.value;$('#target-out').textContent=setup.target;store.set('thirteen.setup',setup)};
 $('#btn-start').onclick=()=>{newMatch();show('game');requestAnimationFrame(deal)};
 
@@ -1785,29 +1780,20 @@ const tableDefaults={seats:4,match:'endless',target:25,play:'live',turn:30,bank:
 const draft=Object.assign({},tableDefaults,store.get('thirteen.tabledraft',{}));
 let LB={tables:[],private:[],filter:'all',sort:'mode',dir:'desc'}, WR=null;
 function myName(){return profile.name}
-function sampleTables(){
-  const out=[], hosts=[];
-  for(let k=0;k<9;k++){
-    const seats=2+rngInt(3), t0={bots:{}}, host=seatBot(t0,hosts); hosts.push(host);
-    const players=[host]; const fill=rngInt(seats); for(let j=0;j<fill;j++){const n=seatBot(t0,hosts);hosts.push(n);players.push(n)}
-    out.push({id:'t'+k+Date.now(),host,seats,players,bots:t0.bots,match:['endless','target','casual'][rngInt(3)],target:[15,25,50][rngInt(3)],
-      play:rngInt(4)===0?'online':'live',turn:15+5*rngInt(16),bank:60+30*rngInt(5),dc:[60,90,120,180,240,300][rngInt(6)],age:k*2+rngInt(3)});
-  }
-  return out;
-}
+function sampleTables(){ return []; }   // offline, the lobby lists only the CPU tables
 const LVL=['','Beginner','Solid','Strong','Expert'];
 const matchLabel=t=>t.match==='target'?`Target ${t.target}`:t.match==='casual'?'Casual':'Endless';
-/* One CPU-hosted room is always open for every mode (Live, Online) and table size (2, 3, 4 seats).
+/* One CPU table of each size is always open (endless): 1/2, 2/3 and 3/4 seats filled with CPUs of random levels.
    When one fills up or starts, a fresh one replaces it. */
 function ensureCpuRooms(){
   const names=LB.tables.flatMap(t=>t.players);
-  
-  ['live','online'].forEach(play=>[2,3,4].forEach(seats=>{
-    if(LB.tables.some(t=>t.cpuRoom&&t.play===play&&t.seats===seats&&t.players.length<t.seats)) return;
-    const level=1+rngInt(4), host=cpuName(level,names); names.push(host);
-    LB.tables.push({id:'cpu'+play+seats+Date.now()+rngInt(1e6),cpuRoom:true,host,seats,players:[host],bots:{[host]:level},
-      match:'endless',target:25,play,turn:30,bank:120,dc:120,age:rngInt(20)});
-  }));
+  [2,3,4].forEach(seats=>{
+    if(LB.tables.some(t=>t.cpuRoom&&t.seats===seats&&t.players.length<t.seats)) return;
+    const bots={}, players=[];
+    for(let k=1;k<seats;k++){ const level=1+rngInt(4), nm=cpuName(level,names); names.push(nm); players.push(nm); bots[nm]=level; }
+    LB.tables.push({id:'cpu'+seats+Date.now()+rngInt(1e6),cpuRoom:true,host:players[0],seats,players,bots,
+      match:'endless',target:25,play:'live',turn:30,bank:120,dc:120,age:rngInt(20)});
+  });
 }
 function openLobby(){
   LB.tables=sampleTables();
@@ -1825,17 +1811,17 @@ function renderLobby(){
   // guests can join tables (public or private) but can't create them
   const nb=$('#btn-newtable'); nb.disabled=session.guest; nb.textContent=session.guest?'Log in to create a table':'Create table';
   // full tables disappear from the list
-  let list=LB.tables.filter(t=>t.players.length<t.seats&&(LB.filter==='all'||t.play===LB.filter));
+  let list=LB.tables.filter(t=>t.players.length<t.seats&&(LB.filter==='all'||(LB.filter==='cpu')===!!t.cpuRoom));
   const dir=LB.dir==='asc'?1:-1;
-  // Mode: Live tables first, then Online; within each, Endless, Target, Casual; then busiest first
-  const modeKey=t=>(t.play==='live'?0:3)+['endless','target','casual'].indexOf(t.match);
+  // Mode: CPU tables first, then tables other players host; within each, Endless, Target, Casual; then busiest first
+  const modeKey=t=>(t.cpuRoom?0:3)+['endless','target','casual'].indexOf(t.match);
   list.sort(LB.sort==='seats'?(a,b)=>dir*(a.players.length-b.players.length)||modeKey(a)-modeKey(b)
     :(a,b)=>modeKey(a)-modeKey(b)||b.players.length-a.players.length||a.age-b.age);
   $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
     return `<button class="tl-item${full?' full':''}" data-id="${t.id}" ${full?'disabled':''}><b>${esc(t.host)}'s table</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
-      <span class="meta"><span class="pill ${t.play}">${t.play}</span>${t.bots&&t.bots[t.host]?`<span class="pill cpu">CPU · ${LVL[t.bots[t.host]]}</span>`:''}${matchLabel(t)}${t.play==='live'?` · ${t.turn}s turns · ${fmt(t.bank)} bank`:' · 1 day per move'}</span>${t.inProgress?'<span class="inprog">In progress</span>':''}</button>`}).join('')
-    :`<p class="hint" style="text-align:center;padding:20px 0">${NET.ready&&!LB.tables.length?'No open tables right now. Create one, or join a private game.':'No tables match. Try another filter or create one.'}</p>`;
+      <span class="meta">${t.cpuRoom?'<span class="pill cpu">CPU</span>':'<span class="pill live">Players</span>'}${matchLabel(t)} · ${t.turn}s turns · ${fmt(t.bank)} bank</span>${t.inProgress?'<span class="inprog">In progress</span>':''}</button>`}).join('')
+    :`<p class="hint" style="text-align:center;padding:20px 0">${LB.filter==='online'?(NET.ready?'No one is hosting a table right now. Create one, or join a private game.':'Log in to play at tables hosted by other players.'):'No tables match. Try another filter or create one.'}</p>`;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
 }
 $('#lb-filter').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.filter=b.dataset.v;renderLobby()});
@@ -1850,13 +1836,12 @@ $('#btn-newtable').onclick=()=>{if(session.guest) return; renderNewTable();show(
 $('#nt-back').onclick=()=>show('lobby');
 function renderNewTable(){
   const mark=(id,v)=>$(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(v)));
-  mark('#nt-seats',draft.seats); mark('#nt-match',draft.match); mark('#nt-play',draft.play); mark('#nt-dc',draft.dc);
+  mark('#nt-seats',draft.seats); mark('#nt-match',draft.match); draft.play='live'; mark('#nt-dc',draft.dc);
   $('#nt-target-row').hidden=draft.match!=='target'; $('#nt-target').value=draft.target; $('#nt-target-out').textContent=draft.target;
   $('#nt-turn').textContent=draft.turn+'s'; $('#nt-bank').textContent=fmt(draft.bank);
-  $('#nt-live-timers').hidden=draft.play!=='live'; $('#nt-online-note').hidden=draft.play==='live';
   store.set('thirteen.tabledraft',draft);
 }
-[['#nt-seats','seats',true],['#nt-match','match'],['#nt-play','play'],['#nt-dc','dc',true]].forEach(([id,key,num])=>
+[['#nt-seats','seats',true],['#nt-match','match'],['#nt-dc','dc',true]].forEach(([id,key,num])=>
   $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{draft[key]=num?+b.dataset.v:b.dataset.v;renderNewTable()}));
 $('#nt-target').oninput=e=>{draft.target=+e.target.value;$('#nt-target-out').textContent=draft.target;store.set('thirteen.tabledraft',draft)};
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{
@@ -1908,8 +1893,8 @@ function enterWaiting(t,isHost){
   WR={t:{...t,bots:{...(t.bots||{})},players:isHost?[me]:[...t.players.filter(n=>n!==me),me]},src:t.id,isHost,me,count:null,timers:[]};
   $('#wr-title').textContent=t.private?`${t.name}`:isHost?'Your table':`${t.host}’s table`;
   $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">
-    ${t.private?'<span>Lobby <b>Private</b></span>':''}<span>Mode <b>${t.play==='live'?'Live':'Online'}</b></span><span>Scoring <b>${matchLabel(t)}</b></span>
-    ${t.play==='live'?`<span>Turn <b>${t.turn}s</b></span><span>Bank <b>${fmt(t.bank)}</b></span><span>Disconnect <b>${fmt(t.dc)}</b></span>`:'<span>Moves <b>1 day each</b></span>'}</div>`;
+    ${t.private?'<span>Lobby <b>Private</b></span>':''}<span>Scoring <b>${matchLabel(t)}</b></span>
+    <span>Turn <b>${t.turn}s</b></span><span>Bank <b>${fmt(t.bank)}</b></span><span>Disconnect <b>${fmt(t.dc)}</b></span></div>`;
   show('waiting'); renderWaiting(); checkFull(); // no automatic joiners: CPUs are added by the host
   if(!isHost&&WR.t.bots[WR.t.host]){ const fill=()=>{ if(!WR||WR.t.players.length>=WR.t.seats) return; WR.t.players.push(seatBot(WR.t,WR.t.players)); renderWaiting(); checkFull(); WR.timers.push(setTimeout(fill,900)); }; WR.timers.push(setTimeout(fill,900)); }
 }
@@ -1985,7 +1970,7 @@ function launchTable(){
   M={n,players,turnTime:t.play==='live'?t.turn:30,bankTime:t.play==='live'?t.bank:120,bankOn:settings.bank,match:t.match,target:t.target,play:'live',
      bal:Array.from({length:n},()=>Array(n).fill(0)),over:false,table:t};
   show('game');
-  requestAnimationFrame(()=>{deal(); if(t.play==='online') toast('Online play needs the game server. This table plays as Live for now.','info')});
+  requestAnimationFrame(()=>deal());
 }
 
 /* ================= Hand history ================= */
@@ -2216,8 +2201,8 @@ function renderNetWaiting(t){
   $('#wr-title').textContent=t.private||(t.isHost?'Your table':`${t.seats[t.host]?t.seats[t.host].name:'Open'}’s table`);
   const r=t.rules;
   $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">${t.private?'<span>Lobby <b>Private</b></span>':''}
-    <span>Mode <b>${r.play==='live'?'Live':'Online'}</b></span><span>Scoring <b>${matchLabel(r)}</b></span>
-    ${r.play==='live'?`<span>Turn <b>${r.turn}s</b></span><span>Bank <b>${fmt(r.bank)}</b></span><span>Disconnect <b>${fmt(r.dc)}</b></span>`:'<span>Moves <b>1 day each</b></span>'}</div>`;
+    <span>Scoring <b>${matchLabel(r)}</b></span>
+    <span>Turn <b>${r.turn}s</b></span><span>Bank <b>${fmt(r.bank)}</b></span><span>Disconnect <b>${fmt(r.dc)}</b></span></div>`;
   $('#wr-count').textContent=`Seats · ${t.seats.length}/${t.max}`;
   let rows='';
   for(let k=0;k<t.max;k++){
@@ -2414,7 +2399,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-182730) */
+/* Offline support + automatic updates (build 20261104-195406) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
