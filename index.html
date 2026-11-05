@@ -293,8 +293,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 #admin{padding-block:18px; gap:14px; overflow-y:auto; -webkit-overflow-scrolling:touch}
 #admin > *{flex-shrink:0}
 .pf-card{display:grid; grid-template-columns:auto 1fr; align-items:center; justify-items:start; column-gap:14px; row-gap:12px; padding:14px; border-radius:14px; background:var(--panel); border:1px solid var(--line)}
-.pf-card #pf-avatar{grid-column:1}
-.pf-card .pf-name-row{grid-column:2; min-width:0}
+.pf-card #pf-avatar{grid-column:1; grid-row:1 / span 2}
+.pf-card .pf-name-row{grid-column:2; grid-row:1; min-width:0; align-self:end}
+.pf-id{grid-column:2; grid-row:2; align-self:start; display:flex; align-items:center; gap:6px; color:#fff; font-size:12.5px; letter-spacing:.02em}
+.pf-id[hidden]{display:none}
+.pf-id code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:#fff; opacity:.9}
+.copy-id{flex:none; width:24px; height:24px; display:grid; place-items:center; border-radius:6px; border:1px solid var(--line); background:var(--panel-2); color:var(--cream,#eee)}
+.copy-id:active{border-color:var(--brass); color:var(--brass)}
 .pf-card .pf-name-row b{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .pf-card .pf-name-edit,.pf-card #pf-guest-note{grid-column:1 / -1; justify-self:stretch; width:auto}
 .pf-name-row{display:flex; align-items:center; gap:8px}
@@ -681,6 +686,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
       <b id="pf-name"></b>
       <button class="pencil" id="pf-edit" aria-label="Change display name"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M11.3 1.7a1.5 1.5 0 0 1 2.1 0l.9.9a1.5 1.5 0 0 1 0 2.1L5.6 13.4 2 14l.6-3.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
     </div>
+    <div class="pf-id" id="pf-id-row" hidden>ID: <code id="pf-id"></code><button class="copy-id" id="pf-copy" aria-label="Copy player ID"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 10.5V3.8C3 3.4 3.4 3 3.8 3h6.7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
     <form class="pf-name-edit" id="pf-name-form" hidden autocomplete="off">
       <input id="pf-name-input" type="text" maxlength="16" aria-label="Display name" autocapitalize="off" spellcheck="false">
       <div class="row"><button type="button" class="btn btn-ghost" id="pf-cancel">Cancel</button><button type="submit" class="btn btn-brass">Save</button></div>
@@ -1864,7 +1870,7 @@ function avatarHTML(size,p=profile){
 function saveProfile(){if(!session.guest) store.set('thirteen.profile',account); renderProfile()}
 function renderProfile(){
   $('#pr-mini').innerHTML=avatarHTML(42); $('#pr-mini-name').textContent=profile.name;
-  $('#pf-avatar').innerHTML=avatarHTML(76); $('#pf-name').textContent=profile.name;
+  $('#pf-avatar').innerHTML=avatarHTML(76); $('#pf-name').textContent=profile.name; showPlayerId();
   $('#pf-edit').hidden=session.guest; $('#pf-guest-note').hidden=!session.guest;
   $('#pf-colors').classList.toggle('locked',session.guest); $('#pf-animals').classList.toggle('locked',session.guest);
   $('#pf-colors').innerHTML=AV_COLORS.map(c=>`<button class="swatch" data-c="${c}" style="background:${c}" aria-label="Color ${c}" aria-pressed="${profile.color===c}"></button>`).join('');
@@ -2364,7 +2370,7 @@ const NET={ws:null,ready:false,want:false,token:null,me:null,table:null,view:nul
 
 function onServer(m){
   switch(m.t){
-    case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
+    case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; if(m.pid) setPlayerId(m.pid); $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
     case 'admin': renderAdmin(m); break;
     case 'online': { const el=$('#menu-online'); el.innerHTML=`<span class="dot-live"></span>${m.n} player${m.n===1?'':'s'} online`; el.hidden=false; break; }
     case 'announce': announce(m.text); break;
@@ -2631,11 +2637,25 @@ function announce(text){
 
 /* ----- sign in, guests and offline ----- */
 function loginErr(msg){ const e=$('#login-err'); e.textContent=msg||''; e.hidden=!msg; }
+/* A player's permanent ID (account fingerprint): a hash of their account UID. The server sends the same value. */
+async function playerIdFor(uid){
+  const h=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('thirteen-player:'+uid)));
+  return [...h].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,16).toUpperCase().match(/.{4}/g).join('-');
+}
+function setPlayerId(pid){ if(!pid||session.guest) return; account.pid=pid; store.set('thirteen.profile',account); showPlayerId(); }
+function showPlayerId(){ const pid=!session.guest&&account&&account.pid; $('#pf-id-row').hidden=!pid; if(pid) $('#pf-id').textContent=pid; }
+$('#pf-copy').onclick=async()=>{
+  const v=$('#pf-id').textContent; let ok=false;
+  try{ await navigator.clipboard.writeText(v); ok=true; }catch(e){
+    try{ const ta=document.createElement('textarea'); ta.value=v; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); ok=document.execCommand('copy'); ta.remove(); }catch(e2){} }
+  toast(ok?'Player ID copied.':'Couldn\'t copy. Press and hold the ID to copy it.','info');
+};
 function enterOnline(sess,guest){
   NET.token=sess?sess.access_token:null;
   startSession(!!guest);
   if(sess&&!guest){ const meta=sess.user.user_metadata||{}; if(!store.get('thirteen.profile',null)||!account.named){ const nm=(meta.display_name||meta.full_name||meta.name||'').replace(/[^A-Za-z0-9 _.-]/g,'').slice(0,16); if(nm.length>=3){ account.name=nm; } account.named=true; store.set('thirteen.profile',account); } }
   $('#who-line').textContent=guest?`Playing as ${profile.name} (guest) · `:`${profile.name} · `;
+  if(sess&&!guest&&sess.user&&sess.user.id&&window.crypto&&crypto.subtle) playerIdFor(sess.user.id).then(setPlayerId).catch(()=>{});
   NET.connect(); show('menu');
 }
 $('#login-form').addEventListener('submit',async e=>{
@@ -2676,7 +2696,7 @@ $('#btn-google').onclick=async()=>{
 };
 $('#btn-guest').onclick=()=>{ loginErr(''); $('#login-pass').value=''; enterOnline(null,true); };
 $('#btn-offline').onclick=()=>{ loginErr(''); NET.disconnect(); startSession(false); $('#who-line').textContent='Offline · '; show('menu'); };
-$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; $('#menu-online').hidden=true; show('login'); };
+$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; account.pid=null; store.set('thirteen.profile',account); $('#menu-online').hidden=true; show('login'); };
 if(sb){
   // keep the server's copy of your sign-in fresh, finish Google / email-link sign-ins, and handle password resets
   sb.auth.onAuthStateChange((event,sess)=>{
@@ -2698,7 +2718,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-182715) */
+/* Offline support + automatic updates (build 20261105-183839) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
