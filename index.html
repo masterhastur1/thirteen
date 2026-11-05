@@ -489,6 +489,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .google-btn:disabled{opacity:.38; filter:grayscale(1); cursor:not-allowed; pointer-events:none}
 #btn-pass.armed,#game .controls.myturn > #btn-pass.armed{background:#ff8a1f; border-color:#ffc27a; color:#1d1000; box-shadow:0 0 0 2px rgba(255,170,80,.55),0 0 22px 6px rgba(255,138,31,.7); animation:none}
 #btn-pass.armed #clock{color:#1d1000!important; opacity:1}
+/* a disconnected player: big red AFK over the avatar, and their remaining away time beside the nameplate */
+.afk-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:30; font-family:var(--cond); font-weight:700; font-size:26px; letter-spacing:.08em; color:#ff4040; background:rgba(20,6,6,.88); border:2px solid #ff4040; border-radius:7px; padding:0 8px; line-height:1.2; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.7); box-shadow:0 0 12px rgba(255,64,64,.45); animation:stamp .18s ease-out both}
+.nameplate{position:relative}
+.afk-clock{position:absolute; top:50%; left:calc(100% + 6px); transform:translateY(-50%); z-index:8; font-family:var(--cond); font-weight:700; font-size:14px; font-variant-numeric:tabular-nums; color:#fff; background:#b3191f; border:1.5px solid #ff6b6b; border-radius:6px; padding:1px 6px; line-height:1.2; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,.5); animation:afkpop .2s ease-out both}
+.seat.right .afk-clock{left:auto; right:calc(100% + 6px)}
+.afk-clock.running{animation:afkpop .2s ease-out both, afkpulse 1s ease-in-out infinite}
+@keyframes afkpop{from{transform:translateY(-50%) scale(.4); opacity:0}to{transform:translateY(-50%) scale(1); opacity:1}}
+@keyframes afkpulse{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,90,90,.5),0 0 14px rgba(255,64,64,.8)}}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -1353,8 +1361,8 @@ function buildSeats(){
     if(i===0) return;
     const p=M.players[i], d=document.createElement('div');
     d.className='seat '+pos; d.id='seat'+i;
-    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>WAITING</div></div>
-      <div class="nameplate"><b>${plateName(p.name)}</b></div>`;
+    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>WAITING</div><div class="afk-stamp" hidden>AFK</div></div>
+      <div class="nameplate"><b>${plateName(p.name)}</b><span class="afk-clock" hidden></span></div>`;
     table.appendChild(d);
   });
 }
@@ -1398,10 +1406,31 @@ function renderSeats(){
     const el=$('#seat'+i); if(!el) continue;
     const st=seatState(i);
     ['turn','ontop','passed','out','waiting'].forEach(c=>el.classList.toggle(c,st===c));
-    el.querySelector('.pass-stamp').hidden=st!=='passed';
+    const afk=!!(M.online&&M.players[i].away&&!G.over);
+    el.classList.toggle('afk',afk);
+    el.querySelector('.afk-stamp').hidden=!afk;
+    el.querySelector('.pass-stamp').hidden=st!=='passed'||afk;
     el.querySelector('.wait-stamp').hidden=st!=='waiting';
     const mini=el.querySelector('.mini'), len=G.dealing?G.got[i]:G.hands[i].length;
     mini.classList.toggle('last',!G.dealing&&len===1); mini.classList.toggle('gone',len===0);
+  }
+  renderAfkClocks();
+}
+/* A disconnected player's remaining away time, shown to everyone once it's under a minute.
+   It counts down live while their turn is waiting on them. */
+function renderAfkClocks(){
+  if(!M||!M.online||!G||!G.order) return;
+  const c=G.clock, now=Date.now()-(NET.offset||0);
+  for(let i=1;i<M.n;i++){
+    const box=document.querySelector('#seat'+i+' .afk-clock'); if(!box) continue;
+    const p=M.players[i], j=G.order[i];
+    let ms=null;
+    if(p.away&&!p.left&&!G.over&&j<G.nSeats) ms=c&&c.who===j&&c.phase==='away'?Math.max(0,c.endsAt-now):G.dcLeft[i];
+    const show=ms!=null&&ms<60000;
+    box.hidden=!show; if(!show) continue;
+    const sec=Math.min(59,Math.ceil(ms/1000)), txt='0:'+String(sec).padStart(2,'0');
+    if(box.textContent!==txt) box.textContent=txt;
+    box.classList.toggle('running',!!(c&&c.who===j&&c.phase==='away'));
   }
 }
 function renderPile(){
@@ -2249,7 +2278,7 @@ function applyView(v){
   // seats are reordered so you are always seat 0, as in offline play
   const order=[...Array(total).keys()].map(k=>(base+k)%total), rot=j=>j<0?-1:order.indexOf(j);
   const slot=j=>j<n?v.seats[j]:{name:wl[j-n].name,avatar:wl[j-n].avatar,cpu:false,connected:true,waiting:true,action:null};
-  M={n:total,online:true,table:true,players:order.map((j,k)=>{const s=slot(j); return {name:k===0?'You':s.name,cpu:s.cpu,level:s.level,connected:s.connected,waiting:!!s.waiting,color:COLORS[k],tag:s.cpu?'CPU':'PLAYER'}}),
+  M={n:total,online:true,table:true,players:order.map((j,k)=>{const s=slot(j); return {name:k===0?'You':s.name,cpu:s.cpu,level:s.level,connected:s.connected,away:!!s.away,left:!!s.left,waiting:!!s.waiting,color:COLORS[k],tag:s.cpu?'CPU':'PLAYER'}}),
     play:v.rules.play,match:t?t.rules.match:'endless',target:t?t.rules.target:25,bankOn:v.bankOn,turnTime:v.rules.turn,bankTime:v.rules.bank,
     bal:order.map(a=>order.map(b=>t&&a<n&&b<n&&t.ledger[a]?t.ledger[a][b]||0:0))};
   const prevHand=fresh?[]:G.hands[0], ids=new Set(v.hand);
@@ -2261,7 +2290,8 @@ function applyView(v){
     cur:v.cur<0?-1:rot(v.cur),table:pubPlay(v.table),prev:pubPlay(v.prev),opening:v.opening,openCard:G&&!fresh&&G.openCard||null,
     openPreview:v.phase==='opening',dealing:v.phase==='dealing',shown:hand.length,got:order.map(j=>j<n?13:0),
     finalLap:v.finalLap?{}:null,lapDone:v.lapDone,over:v.phase==='over',action:order.map(j=>j<n?v.seats[j].action:null),
-    bank:Array(total).fill(v.bank/1000),turnLeft:0,bankActive:false,log:[],clock:v.clock,leftover:0};
+    bank:Array(total).fill(v.bank/1000),turnLeft:0,bankActive:false,log:[],clock:v.clock,leftover:0,
+    order,nSeats:n,dcLeft:order.map(j=>j<n?v.seats[j].dcLeft||0:0)};
   if(G.table) G.table.by=rot(G.table.by); if(G.prev) G.prev.by=rot(G.prev.by);
   if(v.openCard!=null) G.openCard=idCard(v.openCard);
   if(!G.openCard&&v.opening) G.openCard=hand.filter(c=>c.s===0).sort((a,b)=>a.id-b.id)[0]||null;
@@ -2285,7 +2315,7 @@ function clockTick(){
   G.turnLeft=0; G.bankActive=false;
   if(c&&c.who===NET.view.you){ const left=Math.max(0,(c.endsAt-now)/1000);
     if(c.phase==='turn') G.turnLeft=left; else if(c.phase==='bank'){ G.bankActive=true; G.bank[0]=left; } }
-  renderClock();
+  renderClock(); renderAfkClocks();
 }
 
 /* ----- after each game: stats, hand history and the summary ----- */
@@ -2407,7 +2437,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-201855) */
+/* Offline support + automatic updates (build 20261105-125729) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
