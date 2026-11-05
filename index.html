@@ -355,7 +355,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .tl-item .seats small{display:block; font-size:11px; letter-spacing:.1em; color:var(--muted)}
 .tl-item.full{opacity:.5}
 .tl-item .inprog{grid-column:1; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#f0b85a}
-.wait-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:6; font-family:var(--cond); font-weight:700; font-size:14px; letter-spacing:.04em; color:#fff; background:rgba(10,14,11,.62); border:2px solid rgba(255,255,255,.85); border-radius:6px; padding:0 4px; line-height:1.25; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.6); animation:stamp .18s ease-out both}
+.wait-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:6; font-family:var(--cond); font-weight:700; font-size:15px; letter-spacing:.04em; color:#fff; background:#1f5fd6; border:2px solid #8db7ff; border-radius:6px; padding:0 4px; line-height:1.25; pointer-events:none; text-shadow:0 1px 2px rgba(0,0,0,.45); box-shadow:0 0 10px rgba(60,130,255,.55); animation:stamp .18s ease-out both}
 .seat.waiting .avatar{filter:saturate(.55) brightness(.85)}
 .seat.waiting .mini{display:none}
 #game.spectating #controls{opacity:.4; pointer-events:none}
@@ -1464,7 +1464,7 @@ function buildSeats(){
       d.innerHTML=`<button class="avatar ghost-av" data-ghost="${i}" aria-label="${G&&G.viewer?'Take this seat':'Invite a player to this seat'}">+</button>`;
       table.appendChild(d); return;
     }
-    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>WAITING</div><div class="afk-stamp" hidden>AFK</div><div class="time-stamp" hidden>TIME</div></div>
+    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>RESERVED</div><div class="afk-stamp" hidden>AFK</div><div class="time-stamp" hidden>TIME</div></div>
       <div class="nameplate"><b>${plateName(p.name)}</b><span class="afk-clock" hidden></span></div>`;
     table.appendChild(d);
   });
@@ -1598,7 +1598,7 @@ function renderStatus(){
   if(G.over) msg='';
   else if(G.paused) msg='<b>Paused by the admin.</b> The game will continue shortly.';
   else if(G.viewer) msg=M.players.some(p=>p.ghost)?'<b>Watching.</b> Tap an open seat to be dealt in next game.':'<b>Watching.</b> This table is full right now.';
-  else if(G.spectator) msg='<b>You\'re in.</b> You\'ll be dealt in when the next game starts.';
+  else if(G.spectator) msg='<b>Seat reserved.</b> You\'ll be dealt in when the next game starts.';
   else if(G.lapDone) msg='<b>Final lap complete.</b> Counting the cards…';
   else if(G.dealing) msg='Dealing…'+(G.commit?` <span style="color:var(--muted);font-size:12px">Deal ID ${G.commit.hash.slice(0,8)}</span>`:'');
   else if(G.openPreview) msg=`${G.cur===0?'You begin':esc(M.players[G.cur].name)+' begins'} with the <b>${cname(G.openCard)}</b>.`;
@@ -2525,18 +2525,19 @@ function showNetSummary(t){
     <h3>${champ?(s.champ===me?'You win the match!':esc(t.seats[s.champ].name)+' wins the match'):esc(head)}</h3>
     ${r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
     <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
-    ${me<0?`<p class="hint" style="text-align:center">${t.viewer?'You\'re watching this table. Tap an open seat once the next game starts to join in.':'You\'re waiting at this table. You\'ll be dealt in when the next game starts.'}</p>`:''}
+    ${me<0?`<p class="hint" style="text-align:center">${t.viewer?(n+(t.waiting||[]).length<t.max?'You\'re watching this table. Tap Join to be dealt in next game.':'You\'re watching this table. It\'s full right now.'):'Your seat is reserved. You\'ll be dealt in when the next game starts.'}</p>`:''}
     <p class="brk-status" id="ns-status"></p>
     ${champ||me<0?'':`<div class="brk-row">
       <button class="btn btn-ghost" id="ns-pause" ${!t.isHost&&!two?'disabled':''}>${s.hostPause?'Unpause':'Pause'}</button>
       ${n>2&&!breakOn&&!s.hostPause?`<label class="vote"><input type="checkbox" id="ns-vote" ${s.voted?'checked':''}><span>Vote pause</span><b>${s.votes}/${n}</b></label>`:''}
     </div>`}
-    <div class="sum-actions"><button class="btn btn-ghost" id="ns-leave">Leave table</button>${champ||me<0?'':`<button class="btn btn-brass ready-btn" id="ns-ready" hidden ${s.isReady?'disabled':''}>${s.isReady?'Ready ✓':'Ready'} ${s.ready}/${n}</button>`}</div>
+    <div class="sum-actions"><button class="btn btn-ghost" id="ns-leave">Leave table</button>${t.viewer&&n+(t.waiting||[]).length<t.max?'<button class="btn btn-brass ready-btn" id="ns-join">Join</button>':''}${champ||me<0?'':`<button class="btn btn-brass ready-btn" id="ns-ready" hidden ${s.isReady?'disabled':''}>${s.isReady?'Ready ✓':'Ready'} ${s.ready}/${n}</button>`}</div>
   </div>`;
   $('#overlay').hidden=false;
   const q=id=>document.getElementById(id);
   if(q('ns-pause')) q('ns-pause').onclick=()=>NET.send({t:'pause'});
   if(q('ns-ready')) q('ns-ready').onclick=()=>NET.send({t:'ready'});
+  if(q('ns-join')) q('ns-join').onclick=()=>{ q('ns-join').disabled=true; NET.send({t:'sit'}); };   // watching: take a seat for the next game
   if(q('ns-vote')) q('ns-vote').onchange=e=>NET.send({t:'vote',on:e.target.checked});
   q('ns-leave').onclick=()=>{ NET.send({t:'leave'}); NET.table=null; G=null; $('#overlay').hidden=true; show('lobby'); };
   clearInterval(netSumT); const at=Date.now();
@@ -2688,7 +2689,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-152804) */
+/* Offline support + automatic updates (build 20261105-170326) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
