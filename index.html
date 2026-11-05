@@ -474,8 +474,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   /* 4 players: far-left seat a little lower, top seat up and to the left, so the table cards have room */
   .table[data-n="4"] .seat.left{top:46%; left:10px}
   .table[data-n="4"] .seat.top{top:-4px; left:78px; transform:none} /* avatar centered under the Scoreboard button */
-  /* 2 players: the opponent sits up in the top-left corner, avatar and nameplate 30% bigger */
-  .table[data-n="2"] .seat.top{top:16px; left:56px; transform:scale(1.3); transform-origin:top left}
+  /* 2 players: the opponent sits in the top-left corner; 3 players: one in each top corner.
+     Avatar and nameplate 30% bigger, nameplate centered under the avatar. */
+  .table[data-n="2"] .seat.top,.table[data-n="3"] .seat.left,.table[data-n="3"] .seat.right{top:28px; width:auto; flex-direction:column; align-items:center; gap:6px; transform:scale(1.3)}
+  .table[data-n="2"] .seat.top,.table[data-n="3"] .seat.left{left:44px; right:auto; transform-origin:top left}
+  .table[data-n="3"] .seat.right{right:44px; left:auto; transform-origin:top right}
+  .table[data-n="2"] .seat.top .nameplate,.table[data-n="3"] .seat.left .nameplate,.table[data-n="3"] .seat.right .nameplate{text-align:center}
   .score-pop{left:0; right:auto; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
   .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
   .banner{top:24%}
@@ -2403,7 +2407,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-201257) */
+/* Offline support + automatic updates (build 20261104-201635) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
