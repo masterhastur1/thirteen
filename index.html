@@ -323,7 +323,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .priv-fields{display:flex; flex-direction:column; gap:10px}
 .form-err{margin:0; color:#ff9a9a; font-size:14px}
 .sort-wrap{position:relative}
-.sort-btn{display:flex; align-items:center; gap:8px; min-height:40px; padding:0 14px; border-radius:10px; background:var(--panel-2); border:1px solid var(--line); font-size:14px; color:var(--muted)}
+.sort-btn{justify-self:start; display:flex; align-items:center; gap:5px; min-height:28px; padding:0 9px; border-radius:7px; background:var(--panel-2); border:1px solid var(--line); font-family:var(--cond); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.sort-btn.active{color:var(--brass); border-color:rgba(216,180,106,.45)}
+.sort-btn .tri{width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid currentColor; transition:transform .15s}
+.sort-btn.asc .tri{transform:rotate(180deg)}
 .sort-btn b{color:var(--cream); font-weight:600}
 .sort-btn .chev{color:var(--brass)}
 .sort-menu{position:absolute; top:calc(100% + 6px); left:0; z-index:20; min-width:160px; display:flex; flex-direction:column; padding:4px; border-radius:10px; background:var(--panel-2); border:1px solid var(--brass); box-shadow:0 10px 24px rgba(0,0,0,.5)}
@@ -599,13 +602,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   <div class="lobby-tools">
     <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="cpu">CPU</button><button data-v="online">Online</button></div></div>
     <div class="lobby-tools-row">
-      <div class="sort-wrap">
-        <button class="sort-btn" id="lb-sort-btn" aria-haspopup="menu" aria-expanded="false">Sort <b id="lb-sort-cur">Mode</b><span class="chev" aria-hidden="true">▾</span></button>
-        <div class="sort-menu" id="lb-sort-menu" role="menu" hidden>
-          <button role="menuitemradio" data-v="mode">Mode</button>
-          <button role="menuitemradio" data-v="seats">Seats</button>
-        </div>
-      </div>
+      <button class="sort-btn" id="lb-sort-btn"><span>Sort</span><i class="tri" aria-hidden="true"></i></button>
       <button class="priv-btn" id="lb-private"><span class="lock" aria-hidden="true"></span>Private</button>
       <button class="dir-btn" id="lb-dir"><span>Seats</span><i class="tri" aria-hidden="true"></i></button>
     </div>
@@ -1778,7 +1775,7 @@ $('#pf-name-form').onsubmit=e=>{
 function seatBot(t,used,level){level=level||1+rngInt(4); const nm=cpuName(level,used); t.bots[nm]=level; return nm}
 const tableDefaults={seats:4,match:'endless',target:25,play:'live',turn:30,bank:120,dc:120};
 const draft=Object.assign({},tableDefaults,store.get('thirteen.tabledraft',{}));
-let LB={tables:[],private:[],filter:'all',sort:'mode',dir:'desc'}, WR=null;
+let LB={tables:[],private:[],filter:'all',sort:'mode',dir:'desc',modeDir:'desc'}, WR=null;
 function myName(){return profile.name}
 function sampleTables(){ return []; }   // offline, the lobby lists only the CPU tables
 const LVL=['','Beginner','Solid','Strong','Expert'];
@@ -1803,8 +1800,8 @@ function openLobby(){
 }
 function renderLobby(){
   $('#lb-filter').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===LB.filter));
-  $('#lb-sort-cur').textContent=LB.sort==='seats'?'Seats':'Mode';
-  $('#lb-sort-menu').querySelectorAll('button').forEach(b=>b.setAttribute('aria-checked',b.dataset.v===LB.sort));
+  const sb=$('#lb-sort-btn'); sb.classList.toggle('active',LB.sort==='mode'); sb.classList.toggle('asc',LB.modeDir==='asc');
+  sb.setAttribute('aria-label',LB.modeDir==='desc'?'Sort by mode: CPU tables first. Tap to reverse.':'Sort by mode: player tables first. Tap to reverse.');
   const db=$('#lb-dir'); db.classList.toggle('asc',LB.dir==='asc'); db.classList.toggle('active',LB.sort==='seats');
   db.setAttribute('aria-label',LB.dir==='desc'?'Seats: highest to lowest. Tap for lowest to highest.':'Seats: lowest to highest. Tap for highest to lowest.');
   ensureCpuRooms();
@@ -1816,7 +1813,7 @@ function renderLobby(){
   // Mode: CPU tables first, then tables other players host; within each, Endless, Target, Casual; then busiest first
   const modeKey=t=>(t.cpuRoom?0:3)+['endless','target','casual'].indexOf(t.match);
   list.sort(LB.sort==='seats'?(a,b)=>dir*(a.players.length-b.players.length)||modeKey(a)-modeKey(b)
-    :(a,b)=>modeKey(a)-modeKey(b)||b.players.length-a.players.length||a.age-b.age);
+    :(a,b)=>(LB.modeDir==='desc'?1:-1)*(modeKey(a)-modeKey(b)||b.players.length-a.players.length||a.age-b.age));
   $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
     return `<button class="tl-item${full?' full':''}" data-id="${t.id}" ${full?'disabled':''}><b>${esc(t.host)}'s table</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
@@ -1825,10 +1822,8 @@ function renderLobby(){
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
 }
 $('#lb-filter').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.filter=b.dataset.v;renderLobby()});
-function sortMenu(open){$('#lb-sort-menu').hidden=!open;$('#lb-sort-btn').setAttribute('aria-expanded',open)}
-$('#lb-sort-btn').onclick=e=>{e.stopPropagation();sortMenu($('#lb-sort-menu').hidden)};
-$('#lb-sort-menu').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.sort=b.dataset.v;sortMenu(false);renderLobby()});
-document.addEventListener('click',e=>{if(!e.target.closest('.sort-wrap'))sortMenu(false)});
+/* Sort: first tap sorts by mode (CPU tables first, then Endless, Target, Casual), next tap reverses it */
+$('#lb-sort-btn').onclick=()=>{if(LB.sort!=='mode'){LB.sort='mode';LB.modeDir='desc'}else LB.modeDir=LB.modeDir==='desc'?'asc':'desc';renderLobby()};
 /* Triangle: first tap sorts seats highest to lowest (points down), next tap lowest to highest (points up) */
 $('#lb-dir').onclick=()=>{if(LB.sort!=='seats'){LB.sort='seats';LB.dir='desc'}else LB.dir=LB.dir==='desc'?'asc':'desc';renderLobby()};
 $('#lobby-back').onclick=()=>show('menu');
@@ -2399,7 +2394,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-195406) */
+/* Offline support + automatic updates (build 20261104-200458) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
