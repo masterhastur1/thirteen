@@ -1499,9 +1499,9 @@ function renderStatus(){
   else if(G.spectator) msg='<b>You\'re in.</b> You\'ll be dealt in when the next game starts.';
   else if(G.lapDone) msg='<b>Final lap complete.</b> Counting the cards…';
   else if(G.dealing) msg='Dealing…'+(G.commit?` <span style="color:var(--muted);font-size:12px">Deal ID ${G.commit.hash.slice(0,8)}</span>`:'');
-  else if(G.openPreview) msg=`${G.cur===0?'You hold':esc(M.players[G.cur].name)+' holds'} the lowest club, the <b>${cname(G.openCard)}</b>. It plays automatically.`;
+  else if(G.openPreview) msg=`${G.cur===0?'You begin':esc(M.players[G.cur].name)+' begins'} with the <b>${cname(G.openCard)}</b>.`;
   else if(me){
-    if(G.opening) msg=`Open the game with the <b>${cname(G.openCard)}</b>.`;
+    if(G.opening) msg=`You begin with the <b>${cname(G.openCard)}</b>.`;
     else if(!G.table) msg='<b>Your lead.</b> Play anything.';
     else msg=`Beat <b>${describe(G.table)}</b> or pass.`;
     if(G.finalLap) msg='<b>Final lap.</b> '+(G.table?`Beat ${describe(G.table)} to shed cards, or pass.`:'Play to shed cards.');
@@ -2448,7 +2448,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-133717) */
+/* Offline support + automatic updates (build 20261105-134942) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
