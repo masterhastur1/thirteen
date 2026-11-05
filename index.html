@@ -292,7 +292,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 #profile{padding-block:18px; gap:14px; overflow-y:auto}
 #admin{padding-block:18px; gap:14px; overflow-y:auto; -webkit-overflow-scrolling:touch}
 #admin > *{flex-shrink:0}
-.pf-card{display:flex; flex-direction:column; align-items:center; gap:12px; padding:18px 14px; border-radius:14px; background:var(--panel); border:1px solid var(--line)}
+.pf-card{display:grid; grid-template-columns:auto 1fr; align-items:center; justify-items:start; column-gap:14px; row-gap:12px; padding:14px; border-radius:14px; background:var(--panel); border:1px solid var(--line)}
+.pf-card #pf-avatar{grid-column:1}
+.pf-card .pf-name-row{grid-column:2; min-width:0}
+.pf-card .pf-name-row b{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pf-card .pf-name-edit,.pf-card #pf-guest-note{grid-column:1 / -1; justify-self:stretch; width:auto}
 .pf-name-row{display:flex; align-items:center; gap:8px}
 .pf-name-row b{font-family:var(--display); font-weight:400; font-size:26px}
 .pencil{width:30px; height:30px; display:grid; place-items:center; border-radius:8px; color:var(--brass)}
@@ -1860,7 +1864,7 @@ function avatarHTML(size,p=profile){
 function saveProfile(){if(!session.guest) store.set('thirteen.profile',account); renderProfile()}
 function renderProfile(){
   $('#pr-mini').innerHTML=avatarHTML(42); $('#pr-mini-name').textContent=profile.name;
-  $('#pf-avatar').innerHTML=avatarHTML(104); $('#pf-name').textContent=profile.name;
+  $('#pf-avatar').innerHTML=avatarHTML(76); $('#pf-name').textContent=profile.name;
   $('#pf-edit').hidden=session.guest; $('#pf-guest-note').hidden=!session.guest;
   $('#pf-colors').classList.toggle('locked',session.guest); $('#pf-animals').classList.toggle('locked',session.guest);
   $('#pf-colors').innerHTML=AV_COLORS.map(c=>`<button class="swatch" data-c="${c}" style="background:${c}" aria-label="Color ${c}" aria-pressed="${profile.color===c}"></button>`).join('');
@@ -2694,7 +2698,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-182106) */
+/* Offline support + automatic updates (build 20261105-182715) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
