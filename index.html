@@ -458,7 +458,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #btn-sort{width:55px; height:52px; left:-12px; bottom:4px; padding:0 2px; border-radius:10px}
   #btn-bank{top:4px; right:86px; height:30px; width:auto; flex-direction:row; gap:7px; padding:0 11px; border-radius:9px}
   #btn-pass,#btn-play{width:100px; right:-12px}
-  #btn-play{bottom:4px} #btn-pass{bottom:61px}
+  #btn-play{bottom:4px} #btn-pass{bottom:66px}   /* a small gap between Pass and Play */
   #btn-sort small{font-size:9px; letter-spacing:.06em}
   #btn-sort b{font-size:15px}
   #btn-bank small{font-size:11px; letter-spacing:.08em}
@@ -481,6 +481,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 @media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
 @media (max-height:640px){.table{min-height:200px} .hand{height:118px}}
 .google-btn:disabled{opacity:.38; filter:grayscale(1); cursor:not-allowed; pointer-events:none}
+#btn-pass.armed,#game .controls.myturn > #btn-pass.armed{background:#ff8a1f; border-color:#ffc27a; color:#1d1000; box-shadow:0 0 0 2px rgba(255,170,80,.55),0 0 22px 6px rgba(255,138,31,.7); animation:none}
+#btn-pass.armed #clock{color:#1d1000!important; opacity:1}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -1206,6 +1208,9 @@ $('#btn-play').onclick=()=>{
 $('#btn-pass').onclick=()=>{
   if(!G||G.over||G.cur!==0) return;
   if(G.opening||!G.table) return blocked(G.opening?`Open the game with the ${cname(G.openCard)}.`:'You lead this round, so you have to play something.');
+  // Pass takes two taps: the first arms it (bright orange), the second passes
+  if(!G.passArmed){ G.passArmed=true; $('#btn-pass').classList.add('armed'); return; }
+  G.passArmed=false; $('#btn-pass').classList.remove('armed');
   doPass(0,false);
 };
 $('#btn-sort').onclick=()=>{sortMode=sortMode==='suit'?'rank':'suit';sortHand();renderHand();$('#sort-mode').textContent=sortMode==='suit'?'Suit':'Rank'};
@@ -1461,6 +1466,8 @@ function renderStatus(){
   st.innerHTML=msg;
   $('#controls').classList.toggle('myturn',me);
   $('#btn-play').disabled=!me; $('#btn-pass').disabled=!me||G.opening||!G.table;
+  if(!me||G.opening||!G.table) G.passArmed=false;
+  $('#btn-pass').classList.toggle('armed',!!G.passArmed);
 }
 function renderClock(){
   if(!G) return;
@@ -2242,7 +2249,7 @@ function applyView(v){
   const prevHand=fresh?[]:G.hands[0], ids=new Set(v.hand);
   const hand=prevHand.filter(c=>ids.has(c.id)); v.hand.forEach(id=>{ if(!hand.some(c=>c.id===id)) hand.push(idCard(id)); });
   [...sel].forEach(id=>{ if(!ids.has(id)) sel.delete(id); });
-  const keep=fresh?{autoPass:false,confirmSpade:false}:{autoPass:G.autoPass,confirmSpade:G.confirmSpade};
+  const keep=fresh?{autoPass:false,confirmSpade:false}:{autoPass:G.autoPass,confirmSpade:G.confirmSpade,passArmed:G.passArmed};
   G={online:true,spectator,commitHash:v.commit,commit:{hash:v.commit},...keep,
     hands:order.map((j,k)=>k===0?hand:j>=n?[]:Array(v.seats[j].out?0:v.seats[j].oneCard?1:2).fill(null)),
     cur:v.cur<0?-1:rot(v.cur),table:pubPlay(v.table),prev:pubPlay(v.prev),opening:v.opening,openCard:G&&!fresh&&G.openCard||null,
@@ -2394,7 +2401,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-200458) */
+/* Offline support + automatic updates (build 20261104-200801) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
