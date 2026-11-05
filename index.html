@@ -503,12 +503,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .afk-clock.running{animation:afkpop .2s ease-out both, afkpulse 1s ease-in-out infinite}
 @keyframes afkpop{from{transform:scale(.6); opacity:0}to{transform:scale(1); opacity:1}}
 @keyframes afkpulse{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,90,90,.5),0 0 14px rgba(255,64,64,.8)}}
-.owes{display:flex; flex-direction:column; border-top:1px solid var(--line)}
-.owe-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); font-size:15px}
-.owe-who{display:inline-flex; align-items:center; gap:7px; min-width:0}
-.owe-row b{font-family:var(--cond); font-size:20px; font-variant-numeric:tabular-nums}
-.owe-row.pos b{color:var(--ok)} .owe-row.neg b{color:#ff8f8f}
-.owe-none{margin:10px 0; color:var(--muted)}
 .sum-actions{display:flex; align-items:center; justify-content:space-between; gap:10px}
 .sum-actions .btn{flex:0 1 auto; min-width:120px}
 .sum-actions .ready-btn{margin-left:auto; animation:fadein .25s both}
@@ -1636,8 +1630,9 @@ function finish(type,loser){
     <h3>${matchOver?(champ===0?'You win the match!':esc(M.players[champ].name)+' wins the match'):esc(head)}</h3>
     ${matchOver?`<p>${esc(head)} ${champ===0?'You':esc(M.players[champ].name)} reached ${net(champ)} of ${M.target} points.</p>`:''}
     ${stuck}${sub?`<p>${esc(sub)}</p>`:''}
-    <div class="label">${M.match==='casual'?'This game':'Running tally at this table'}</div>
-    ${owesHTML(M.players.map(p=>p.name),M.players.map(p=>p.color),M.bal,M.match==='casual')}
+    <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
+    <button class="bd-toggle" id="r-bd" aria-expanded="false">View by opponent <span aria-hidden="true">▾</span></button>
+    <div class="breakdown" id="r-bd-list" hidden>${breakdownHTML()}</div>
     <div class="leave-confirm" id="r-leave" hidden>
       <p><b>Leave this match?</b> ${M.match==='casual'?'You\'ll return to the menu.':'The match tally will be lost.'}</p>
       <div class="row"><button class="btn btn-ghost" id="r-stay">Stay</button><button class="btn btn-brass" id="r-go">Leave</button></div>
@@ -1652,6 +1647,7 @@ function finish(type,loser){
     </div>`}
   </div>`;
   $('#overlay').hidden=false;
+  $('#r-bd').onclick=()=>{const l=$('#r-bd-list'), open=l.hidden; l.hidden=!open; $('#r-bd').setAttribute('aria-expanded',open); $('#r-bd span').textContent=open?'▴':'▾'};
   // Menu asks first. The countdown keeps running so no one can hold up the table.
   const askLeave=on=>{ $('#r-leave').hidden=!on; $('#r-actions').hidden=on; if(on) $('#r-leave').scrollIntoView({block:'nearest'})};
   $('#r-menu').onclick=()=>askLeave(true);
@@ -1717,21 +1713,6 @@ function openSheet(html){$('#overlay').innerHTML=`<div class="sheet" role="dialo
 function closeSheet(){$('#overlay').hidden=true}
 $('#overlay').addEventListener('click',e=>{if(e.target.id==='overlay'&&!(G&&G.over))closeSheet()});
 $('#chips').onclick=()=>scorePop($('#score-pop').hidden);
-/* The post-game scoreboard: the running tally at this table, as who owes whom.
-   names/colors are in display order (you first); ledger[a][b] > 0 means b owes a. */
-function owesHTML(names,colors,ledger,casual){
-  const n=names.length, lines=[];
-  for(let a=0;a<n;a++) for(let b=a+1;b<n;b++){
-    const v=ledger[a][b]; if(!v) continue;
-    const cred=v>0?a:b, debt=v>0?b:a, amt=Math.abs(v);
-    const nm=i=>i===0?'You':esc(names[i]);
-    const txt=debt===0?`You owe ${nm(cred)}`:cred===0?`${nm(debt)} owes you`:`${nm(debt)} owes ${nm(cred)}`;
-    const cls=cred===0?'pos':debt===0?'neg':'';
-    lines.push({mine:cred===0||debt===0,amt,html:`<div class="owe-row ${cls}"><span class="owe-who"><span class="dot" style="background:${colors[debt]}"></span>${txt}<span class="dot" style="background:${colors[cred]}"></span></span><b>${amt}</b></div>`});
-  }
-  lines.sort((x,y)=>(y.mine-x.mine)||(y.amt-x.amt));
-  return `<div class="owes">${lines.length?lines.map(l=>l.html).join(''):'<p class="owe-none">All square. No one owes anyone.</p>'}</div>${casual?'<p class="hint" style="margin:0">Casual table: the tally starts fresh every game.</p>':''}`;
-}
 function breakdownHTML(){
   return M.players.map((p,i)=>{const v=net(i);
     const lines=M.players.map((q,j)=>j===i?'':`<div class="bd-line"><span><span class="dot" style="background:${q.color}"></span>vs ${esc(q.name)}</span><b class="${M.bal[i][j]>0?'pos':M.bal[i][j]<0?'neg':''}">${signed(M.bal[i][j])||'0'}</b></div>`).join('');
@@ -2416,15 +2397,15 @@ function showNetSummary(t){
   const name=j=>j===me?'You':t.seats[j].name;
   const head=r.type==='win'?(r.winner===me?'You went out!':`${t.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${t.seats[r.loser].name} is stuck with the 2♠`);
   recordPlayerTally(t);
-  const tally=owesHTML(order.map(j=>t.seats[j].name),order.map((j,k)=>COLORS[k]),order.map(a=>order.map(b=>t.ledger[a]?t.ledger[a][b]||0:0)),t.rules.match==='casual');
+  // Net is this table's running tally for the players sitting here now (it resets when someone leaves the table)
+  const rows=order.map((j,k)=>`<tr><td><span class="who"><span class="dot" style="background:${COLORS[k]}"></span>${esc(name(j))}</span></td><td>${r.counts[j]}</td><td class="${s.delta[j]>0?'pos':s.delta[j]<0?'neg':''}">${signed(s.delta[j])||'0'}</td><td>${t.rules.match==='casual'?'—':signed(s.net[j])||'0'}</td></tr>`).join('');
   const champ=s.champ>=0;
   const breakOn=!!s.breakEnds, two=n===2;
   $('#overlay').innerHTML=`<div class="sheet" role="dialog" aria-modal="true">
     <div class="label">Game result · Deal ID ${esc(r.proof.hash.slice(0,8))}</div>
     <h3>${champ?(s.champ===me?'You win the match!':esc(t.seats[s.champ].name)+' wins the match'):esc(head)}</h3>
     ${r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
-    <div class="label">${t.rules.match==='casual'?'This game':'Running tally at this table'}</div>
-    ${tally}
+    <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
     ${me<0?'<p class="hint" style="text-align:center">You\'re waiting at this table. You\'ll be dealt in when the next game starts.</p>':''}
     <p class="brk-status" id="ns-status"></p>
     ${champ||me<0?'':`<div class="brk-row">
@@ -2516,7 +2497,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-140823) */
+/* Offline support + automatic updates (build 20261105-142047) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
