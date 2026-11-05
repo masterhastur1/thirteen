@@ -496,6 +496,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .afk-clock{position:absolute; inset:-1px; z-index:8; align-items:center; justify-content:center; font-family:var(--cond); font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; color:#ff3b3b; background:#050605; border:1.5px solid #ff3b3b; border-radius:7px; line-height:1; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,.5); animation:afkpop .2s ease-out both}
 .afk-clock:not([hidden]){display:flex}
 .afk-clock.bank{color:#fff; border-color:rgba(255,255,255,.75)}
+.time-stamp{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-14deg); z-index:30; font-family:var(--cond); font-weight:700; font-size:26px; letter-spacing:.08em; color:#fff; background:rgba(10,14,11,.85); border:2px solid #fff; border-radius:7px; padding:0 8px; line-height:1.2; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.7); animation:stamp .18s ease-out both, timepulse 1s ease-in-out .18s infinite}
+@keyframes timepulse{0%,100%{box-shadow:0 0 4px rgba(255,255,255,.25); opacity:.8}50%{box-shadow:0 0 16px 3px rgba(255,255,255,.75); opacity:1}}
 .afk-clock.bank.running{animation:afkpop .2s ease-out both, bankpulse 1s ease-in-out infinite}
 @keyframes bankpulse{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.35),0 0 12px rgba(255,255,255,.55)}}
 .afk-clock.running{animation:afkpop .2s ease-out both, afkpulse 1s ease-in-out infinite}
@@ -1365,7 +1367,7 @@ function buildSeats(){
     if(i===0) return;
     const p=M.players[i], d=document.createElement('div');
     d.className='seat '+pos; d.id='seat'+i;
-    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>WAITING</div><div class="afk-stamp" hidden>AFK</div></div>
+    d.innerHTML=`<div class="avatar" style="background:${p.color}">${p.name[0]}<div class="mini back"></div><div class="pass-stamp" hidden>PASS</div><div class="wait-stamp" hidden>WAITING</div><div class="afk-stamp" hidden>AFK</div><div class="time-stamp" hidden>TIME</div></div>
       <div class="nameplate"><b>${plateName(p.name)}</b><span class="afk-clock" hidden></span></div>`;
     table.appendChild(d);
   });
@@ -1433,7 +1435,9 @@ function renderAfkClocks(){
     // a player whose time bank is running gets the same countdown (white numbers) once under a minute
     else if(c&&c.who===j&&c.phase==='bank'&&!G.over){ ms=Math.max(0,c.endsAt-now); bank=true; }
     const show=ms!=null&&ms<60000;
-    box.hidden=!show; box.classList.toggle('bank',bank); if(!show) continue;
+    box.hidden=!show; box.classList.toggle('bank',bank);
+    const ts=document.querySelector('#seat'+i+' .time-stamp'); if(ts) ts.hidden=!(show&&bank);
+    if(!show) continue;
     const sec=Math.min(59,Math.ceil(ms/1000)), txt='0:'+String(sec).padStart(2,'0');
     if(box.textContent!==txt) box.textContent=txt;
     box.classList.toggle('running',!!(c&&c.who===j&&(c.phase==='away'||c.phase==='bank')));
@@ -2444,7 +2448,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-133457) */
+/* Offline support + automatic updates (build 20261105-133717) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
