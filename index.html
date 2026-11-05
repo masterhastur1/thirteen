@@ -473,7 +473,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   .rankline{bottom:auto; top:calc(30% + 104px)}
   /* 4 players: far-left seat a little lower, top seat up and to the left, so the table cards have room */
   .table[data-n="4"] .seat.left{top:46%; left:10px}
-  .table[data-n="4"] .seat.top{top:-4px; left:78px; transform:none} /* avatar centered under the Scoreboard button */ /* avatar centered under the Scoreboard button */
+  .table[data-n="4"] .seat.top{top:-4px; left:78px; transform:none} /* avatar centered under the Scoreboard button */
+  /* 2 players: the opponent sits up in the top-left corner, avatar and nameplate 30% bigger */
+  .table[data-n="2"] .seat.top{top:16px; left:56px; transform:scale(1.3); transform-origin:top left}
   .score-pop{left:0; right:auto; margin:0; width:min(380px,46%); max-height:calc(100% - 60px); overflow-y:auto}
   .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px)); left:auto; right:max(16px, env(safe-area-inset-right,0px)); transform:none; width:min(380px, 45%)}
   .banner{top:24%}
@@ -2401,7 +2403,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261104-200801) */
+/* Offline support + automatic updates (build 20261104-201257) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
