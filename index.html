@@ -1980,6 +1980,11 @@ const LVL=['','Beginner','Solid','Strong','Expert'];
 const matchLabel=t=>t.match==='target'?`Target ${t.target}`:t.match==='casual'?'Casual':'Endless';
 /* One CPU table of each size is always open (endless): 1/2, 2/3 and 3/4 seats filled with CPUs of random levels.
    When one fills up or starts, a fresh one replaces it. */
+/* Lobby tag: "Players" only when a real person is at the table right now; "CPU" when it's CPUs only; nothing for an empty table */
+function tablePill(t){
+  const humans=t.humans!=null?t.humans:(t.cpuRoom?0:t.players.length), cpus=t.cpus!=null?t.cpus:(t.cpuRoom?t.players.length:0);
+  return humans>0?'<span class="pill live">Players</span>':cpus>0||t.cpuRoom?'<span class="pill cpu">CPU</span>':'';
+}
 function ensureCpuRooms(){
   const names=LB.tables.flatMap(t=>t.players);
   [2,3,4].forEach(seats=>{
@@ -2016,7 +2021,7 @@ function renderLobby(){
   $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
     return `<button class="tl-item${full?' full':''}${t.dedicated?' featured':''}" data-id="${t.id}" ${full?'disabled':''}><b>${t.dedicated?'<span class="pill feat">★ Featured</span> '+esc(t.dedicated):esc(t.host)+"'s table"}</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
-      <span class="meta">${t.cpuRoom?'<span class="pill cpu">CPU</span>':'<span class="pill live">Players</span>'}${matchLabel(t)} · ${t.turn}s turns · ${fmt(t.bank)} bank</span>${t.inProgress?'<span class="inprog">In progress</span>':''}</button>`}).join('')
+      <span class="meta">${tablePill(t)}${matchLabel(t)} · ${t.turn}s turns · ${fmt(t.bank)} bank</span>${t.inProgress?'<span class="inprog">In progress</span>':''}</button>`}).join('')
     :`<p class="hint" style="text-align:center;padding:20px 0">${LB.filter==='online'?(NET.ready?'No one is hosting a table right now. Create one, or join a private game.':'Log in to play at tables hosted by other players.'):'No tables match. Try another filter or create one.'}</p>`;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
 }
@@ -2391,7 +2396,7 @@ renderLobby=function(){
   if(!NET.ready) return _renderLobby();
   // shape server listings like the offline ones so the same list, filter and sort code draws them
   LB.tables=NET.lobby.map((t,k)=>({id:t.id,online:true,cpuRoom:t.cpuRoom,host:t.host,seats:t.seats,players:t.filled?[t.host,...Array(t.filled-1).fill('')]:[],
-    inProgress:!!t.inProgress,dedicated:t.dedicated||null,bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
+    inProgress:!!t.inProgress,dedicated:t.dedicated||null,humans:t.humans,cpus:t.cpus,bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
   const save=window.ensureCpuRooms; ensureCpuRooms=()=>{}; _renderLobby(); ensureCpuRooms=save;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>NET.send({t:'join',id:b.dataset.id}));
 };
@@ -2717,7 +2722,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261105-184512) */
+/* Offline support + automatic updates (build 20261106-062438) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
