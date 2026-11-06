@@ -327,8 +327,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .swatch.none{font-family:var(--display); font-size:20px; color:var(--cream)}
 .swatches.locked{opacity:.4; pointer-events:none}
 .lobby-tools{display:flex; flex-direction:column; gap:10px}
-.lb-top{display:flex; gap:10px; align-items:center}
-.lb-top .seg{flex:1}
+.lb-top{display:flex; gap:8px; align-items:center}
+.lb-top .seg{flex:1; min-width:0}
+.lb-top .seg button{min-height:38px; padding:0 4px; font-size:14px}
+.friends-btn{position:relative; flex:none; width:42px; height:42px; margin-right:5px; border-radius:50%; background:var(--panel-2); border:1px solid var(--brass); display:grid; place-items:center; color:var(--brass)}
+.friends-btn:active{background:var(--panel)}
+.friends-btn b{position:absolute; right:-4px; top:-4px; min-width:19px; height:19px; border-radius:10px; background:var(--ok); color:#06210f; font:700 11px var(--body,system-ui); display:grid; place-items:center; padding:0 5px}
+.friends-btn b[hidden]{display:none}
+.fr-empty{color:var(--muted); margin:6px 0 12px}
+.fr-add{display:flex; gap:8px} .fr-add input{flex:1; min-width:0; background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:10px; padding:9px 12px; font:16px var(--body,system-ui)}
+.fr-add .btn{flex:none; min-height:42px; padding:0 16px}
 .lobby-tools-row{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px}
 .lobby-tools-row .dir-btn{justify-self:end; padding-right:14px}
 .priv-btn{display:flex; align-items:center; gap:7px; min-height:40px; padding:0 16px; border-radius:10px; border:1px solid var(--brass); color:var(--brass); font-family:var(--cond); font-weight:700; font-size:15px; letter-spacing:.08em; text-transform:uppercase}
@@ -556,6 +564,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .online-count{margin:2px 0 0; text-align:center; font-size:13px; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:7px}
 .online-count[hidden]{display:none}
 .online-count .dot-live{width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 6px var(--ok)}
+.badge-on{display:inline-grid; place-items:center; height:20px; padding:0 7px; border-radius:10px; background:var(--ok); color:#06210f; font:700 12px var(--body,system-ui); vertical-align:middle; margin-left:6px}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -726,7 +735,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 <!-- ============ LOBBY ============ -->
 <section id="lobby" class="screen" hidden>
   <div class="lobby-tools">
-    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="online">Online</button><button data-v="cpu">CPU</button></div></div>
+    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="online">Online</button><button data-v="cpu">CPU</button></div><button class="friends-btn" id="lb-friends" aria-label="Friends"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.6.2 4.4 1.8 5 4.8"/></svg><b id="lb-friends-n" hidden>0</b></button></div>
     <div class="lobby-tools-row">
       <button class="sort-btn" id="lb-sort-btn"><span>Sort</span><i class="tri" aria-hidden="true"></i></button>
       <button class="priv-btn" id="lb-private"><span class="lock" aria-hidden="true"></span>Private</button>
@@ -2026,6 +2035,20 @@ function renderLobby(){
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>{const t=LB.tables.find(x=>x.id===b.dataset.id); if(t) enterWaiting(t,false)});
 }
 $('#lb-filter').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.filter=b.dataset.v;renderLobby()});
+/* Friends: opens over the lobby. The base for now; the list fills in once friends are saved to accounts. */
+let FRIENDS=[];   // [{id, name, status:'online'|'playing'|'offline', table}] once the friends list is live
+$('#lb-friends').onclick=openFriends;
+function friendsOnline(){ const n=FRIENDS.filter(f=>f.status!=='offline').length, b=$('#lb-friends-n'); b.textContent=n; b.hidden=!n; }
+function openFriends(){
+  const online=FRIENDS.filter(f=>f.status!=='offline').length;
+  openSheet(`<h3>Friends${online?` <span class="badge-on">${online} online</span>`:''}</h3>
+    ${FRIENDS.length?'':`<p class="fr-empty">${session.guest?'Log in to add friends.':'No friends yet. Add someone by their screen name or player ID (it\'s under their name in Profile).'}</p>`}
+    ${session.guest?'':`<div class="fr-add"><input id="fr-input" type="text" maxlength="24" placeholder="Screen name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="fr-add">Add</button></div>`}
+    <button class="btn btn-ghost" id="fr-close" style="margin-top:12px">Close</button>`);
+  $('#fr-close').onclick=closeSheet;
+  const add=$('#fr-add'); if(add) add.onclick=()=>{ const v=$('#fr-input').value.trim(); if(!v) return $('#fr-input').focus();
+    closeSheet(); toast(`Friend request to ${v} noted. Friends lists start working once accounts save them.`,'info'); };
+}
 /* Sort: first tap sorts by mode (CPU tables first, then Endless, Target, Casual), next tap reverses it */
 $('#lb-sort-btn').onclick=()=>{if(LB.sort!=='mode'){LB.sort='mode';LB.modeDir='desc'}else LB.modeDir=LB.modeDir==='desc'?'asc':'desc';renderLobby()};
 /* Triangle: first tap sorts seats highest to lowest (points down), next tap lowest to highest (points up) */
@@ -2722,7 +2745,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261106-062438) */
+/* Offline support + automatic updates (build 20261106-155728) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
