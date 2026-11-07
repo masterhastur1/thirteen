@@ -1910,7 +1910,7 @@ function loadStats(){
   if(session.guest) return guestStats||(guestStats=blankStats());
   const s=store.get('thirteen.stats',null); return s&&s.cpu&&s.human?s:blankStats();
 }
-function saveStats(s){ if(session.guest) guestStats=s; else store.set('thirteen.stats',s) }
+function saveStats(s,fromCloud){ if(session.guest) guestStats=s; else { if(!fromCloud) s.updatedAt=Date.now(); store.set('thirteen.stats',s); if(!fromCloud&&window.CLOUD) CLOUD.pushStats(); } }
 /* result: 'w' you went out first, 't' you also emptied your hand during the final lap, 'l' anything else */
 function recordStat(result){
   const opp=M.players.slice(1).filter(p=>!p.waiting); if(!opp.length) return;
@@ -1948,6 +1948,7 @@ function recordPlayerTally(t){
   savePlayers(d);
 }
 function renderPlayers(){
+  if(window.CLOUD&&!renderPlayers.pulling){ renderPlayers.pulling=true; CLOUD.pullTallies().finally(()=>{ renderPlayers.pulling=false; }); }
   const list=Object.values(loadPlayers().tally).sort((a,b)=>Math.abs(b.net)-Math.abs(a.net)||b.games-a.games);
   $('#pl-list').innerHTML=list.length?list.map(e=>`<div class="pl-row"><span class="nm"><span>${esc(e.name)}</span><small>${e.net>0?'Owes you':e.net<0?'You owe them':'All square'} · ${e.games} game${e.games===1?'':'s'}</small></span><b class="${e.net>0?'pos':e.net<0?'neg':''}">${signed(e.net)||'0'}</b></div>`).join('')
     :'<p class="st-empty">No games against other players yet. Play Endless or Target games online and your tally with each player shows up here.</p>';
@@ -2236,6 +2237,7 @@ function saveHistory(r){
   const rec={at:Date.now(),players:M.players.map(p=>({name:p.name,color:p.color,level:p.level||null})),match:M.match,target:M.target,
     start:G.startHand,log:G.log,deck:G.deck,commit:G.commit,result:{type:r.type,winner:r.winner??null,loser:r.loser??null,counts:r.counts,delta:r.delta,head:r.head,net:M.players.map((_,i)=>net(i))}};
   pushHistory(rec);
+  if(window.CLOUD) CLOUD.saveOffline(rec);
 }
 /* History keeps the 100 most recent games, plus every favorited game (starred games never age out). */
 const HIST_RECENT=100, HIST_FAVS=999;
@@ -2273,7 +2275,7 @@ function showHistory(){
     <div class="hist-filter"><button data-f="new" aria-pressed="${histFilter==='new'}">Newest</button><button data-f="fav" aria-pressed="${histFilter==='fav'}">★ Favorites</button></div>
     <div class="hist-list">${items}</div><button class="btn btn-ghost" id="h-close">Close</button>`);
   const scroller=$('#overlay .sheet'); if(showHistory.keepScroll!=null){ scroller.scrollTop=showHistory.keepScroll; showHistory.keepScroll=null; }
-  const update=(h,fn)=>{ const cur=store.get(HKEY,[]); const x=cur.find(y=>(y.id||'')===h.id||y.at===h.at); if(x){ fn(x); fn(h); saveHistoryList(cur); } };
+  const update=(h,fn)=>{ const cur=store.get(HKEY,[]); const x=cur.find(y=>(y.id||'')===h.id||y.at===h.at); if(x){ fn(x); fn(h); saveHistoryList(cur); if(window.CLOUD) CLOUD.saveMark(x); } };
   $('#h-close').onclick=closeSheet;
   document.querySelectorAll('.hist-filter button').forEach(b=>b.onclick=()=>{histFilter=b.dataset.f; showHistory();});
   document.querySelectorAll('.hist-item').forEach(b=>b.onclick=()=>showGame(list[+b.dataset.k]));
@@ -2553,7 +2555,7 @@ function recordNetGame(v){
     const log=(v.log||[]).map(e=>({...e,p:rot(e.p)}));
     const counts=v.seats.map((_,k)=>r.counts[(k+me)%n]);
     const head=r.type==='win'?(r.winner===me?'You went out!':`${v.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${v.seats[r.loser].name} is stuck with the 2♠`);
-    pushHistory({at:Date.now(),players,match:M.match,target:M.target,start,log,deck:r.proof.deck,commit:{salt:r.proof.salt,hash:r.proof.hash},
+    pushHistory({at:Date.now(),online:true,players,match:M.match,target:M.target,start,log,deck:r.proof.deck,commit:{salt:r.proof.salt,hash:r.proof.hash},
       result:{type:r.type,winner:r.winner==null?null:rot(r.winner),loser:r.loser==null?null:rot(r.loser),counts,delta:Array(n).fill(0),head,net:Array(n).fill(0)}});
   }catch(e){}
 }
@@ -2670,6 +2672,104 @@ function announce(text){
   clearTimeout(announce.t); announce.t=setTimeout(()=>el.hidden=true,12000);
 }
 
+
+/* ================= Account sync (Supabase) =================
+   Logged-in players: stats, hand history (with stars and notes) and the Players tally follow the account to any phone.
+   Online games are saved by the game server; this side reads them back, and saves offline (vs CPU) games and stats.
+   The phone keeps its own copy too, so everything still works offline. Guests stay on the device only. */
+const CLOUD={
+  uid:null, busy:false,
+  on(){ return !!(sb&&this.uid&&!session.guest); },
+  start(uid){ this.uid=uid; this.syncAll().catch(e=>console.warn('sync',e)); },
+  stop(){ this.uid=null; },
+  async syncAll(){
+    if(!this.on()||this.busy) return; this.busy=true;
+    try{ await this.syncStats(); await this.syncHistory(); await this.pullTallies(); }
+    finally{ this.busy=false; }
+  },
+  // ---- stats: whichever copy is newer wins (the phone's first upload seeds the account) ----
+  async syncStats(){
+    const {data,error}=await sb.from('user_stats').select('offline,updated_at').eq('user_id',this.uid).maybeSingle(); if(error) throw error;
+    const local=store.get('thirteen.stats',null), remote=data&&data.offline&&data.offline.cpu?data.offline:null;
+    if(remote&&(!local||!local.cpu||(remote.updatedAt||0)>(local.updatedAt||0))) saveStats(remote,true);
+    else if(local&&local.cpu) await this.pushStats(true);
+  },
+  async pushStats(now){
+    if(!this.on()) return;
+    clearTimeout(this.statsT);
+    const go=async()=>{ const st=store.get('thirteen.stats',null); if(!st) return;
+      await sb.from('user_stats').upsert({user_id:this.uid,offline:st,updated_at:new Date().toISOString()}); };
+    if(now) return go(); this.statsT=setTimeout(()=>go().catch(()=>{}),1500);
+  },
+  // ---- history ----
+  fromServer(gp){   // an online game from the database, turned into this phone's history format (you at seat 0)
+    const g=gp.games; if(!g) return null;
+    const n=g.players.length, me=gp.seat, rot=j=>(j-me+n)%n, at=Date.parse(g.played_at);
+    const players=[...Array(n).keys()].map(k=>{ const p=g.players[(k+me)%n]; return {name:k===0?'You':p.name,color:COLORS[k],level:p.level||null}; });
+    const res=g.result||{}, counts=players.map((_,k)=>res.counts[(k+me)%n]), delta=players.map((_,k)=>(res.delta||[])[(k+me)%n]||0);
+    const nm=j=>j===me?'You':g.players[j].name;
+    const head=res.type==='win'?(res.winner===me?'You went out!':`${nm(res.winner)} went out!`):(res.loser===me?'Stuck with the 2♠':`${nm(res.loser)} is stuck with the 2♠`);
+    return {id:'g'+g.id.slice(0,8),gid:g.id,online:true,at,players,match:(g.rules||{}).match||'endless',target:(g.rules||{}).target||25,
+      start:(g.deck||[]).slice(me*13,me*13+13).sort((a,b)=>a-b),log:(g.log||[]).map(e=>({...e,p:rot(e.p)})),deck:g.deck,commit:{salt:g.salt,hash:g.deal_hash},
+      result:{type:res.type,winner:res.winner==null?null:rot(res.winner),loser:res.loser==null?null:rot(res.loser),counts,delta,head,net:Array(n).fill(0)},
+      fav:!!gp.starred,note:gp.note||''};
+  },
+  async syncHistory(){
+    const sel='starred,note,seat,game_id,games(id,deal_hash,played_at,rules,players,log,deck,salt,result)';
+    const [recent,stars,offR,offS]=await Promise.all([
+      sb.from('game_players').select(sel).eq('user_id',this.uid).order('played_at',{ascending:false}).limit(HIST_RECENT),
+      sb.from('game_players').select(sel).eq('user_id',this.uid).eq('starred',true).limit(HIST_FAVS),
+      sb.from('offline_games').select('played_at,data,starred,note').eq('user_id',this.uid).order('played_at',{ascending:false}).limit(HIST_RECENT),
+      sb.from('offline_games').select('played_at,data,starred,note').eq('user_id',this.uid).eq('starred',true).limit(HIST_FAVS)]);
+    for(const q of [recent,stars,offR,offS]) if(q.error) throw q.error;
+    const local=store.get(HKEY,[]), byHash=new Map(), byAt=new Map();
+    local.forEach(h=>{ if(h.commit&&h.commit.hash) byHash.set(h.commit.hash,h); if(!h.online) byAt.set(h.at,h); });   // any local game can match a server game by its Deal ID
+    const marks=[];
+    // online games from the server
+    [...recent.data,...stars.data].forEach(gp=>{
+      const rec=this.fromServer(gp); if(!rec) return;
+      const mine=rec.commit.hash&&byHash.get(rec.commit.hash);
+      if(mine){ mine.gid=rec.gid; mine.online=true; mine.result.delta=rec.result.delta; byAt.delete(mine.at);
+        const fav=!!(mine.fav||rec.fav), note=rec.note||mine.note||'';
+        if(fav!==rec.fav||note!==rec.note){ marks.push({...mine,fav,note}); }
+        mine.fav=fav; mine.note=note; }
+      else if(!local.some(h=>h.gid===rec.gid)){ local.push(rec); byHash.set(rec.commit.hash,rec); }
+    });
+    // offline games: pull the ones this phone doesn't have, push the ones the account doesn't have
+    const remoteAt=new Set();
+    [...offR.data,...offS.data].forEach(o=>{ const at=Date.parse(o.played_at); remoteAt.add(at);
+      const mine=byAt.get(at);
+      if(mine){ const fav=!!(mine.fav||o.starred), note=o.note||mine.note||''; if(fav!==o.starred||note!==(o.note||'')) marks.push({...mine,fav,note}); mine.fav=fav; mine.note=note; }
+      else if(o.data){ const rec={...o.data,at,fav:!!o.starred,note:o.note||''}; local.push(rec); byAt.set(at,rec); } });
+    const ups=local.filter(h=>!h.online&&!h.gid&&!remoteAt.has(h.at)).map(h=>this.offlineRow(h));
+    if(ups.length) await sb.from('offline_games').upsert(ups,{onConflict:'user_id,played_at',ignoreDuplicates:true});
+    saveHistoryList(pruneHistory(local));
+    for(const h of marks) await this.saveMark(h);
+  },
+  offlineRow(h){ const {fav,note,id,...data}=h; return {user_id:this.uid,played_at:new Date(h.at).toISOString(),data,starred:!!fav,note:note||null}; },
+  async saveOffline(rec){ if(!this.on()) return; try{ await sb.from('offline_games').upsert([this.offlineRow(rec)],{onConflict:'user_id,played_at',ignoreDuplicates:true}); }catch(e){} },
+  async saveMark(h){   // a star or note changed on this phone
+    if(!this.on()) return;
+    try{
+      if(h.online||h.gid){
+        let gid=h.gid;
+        if(!gid&&h.commit&&h.commit.hash){ const {data}=await sb.from('games').select('id').eq('deal_hash',h.commit.hash).maybeSingle(); gid=data&&data.id; }
+        if(gid) await sb.from('game_players').update({starred:!!h.fav,note:h.note||null}).eq('game_id',gid).eq('user_id',this.uid);
+      } else await sb.from('offline_games').update({starred:!!h.fav,note:h.note||null}).eq('user_id',this.uid).eq('played_at',new Date(h.at).toISOString());
+    }catch(e){}
+  },
+  // ---- Players tab: the server's running tallies with each account ----
+  async pullTallies(){
+    if(!this.on()) return;
+    const {data,error}=await sb.from('tallies').select('opponent_id,net,games').eq('user_id',this.uid); if(error||!data||!data.length) return;
+    const ids=data.map(t=>t.opponent_id), {data:profs}=await sb.from('profiles').select('user_id,name').in('user_id',ids);
+    const names=new Map((profs||[]).map(p=>[p.user_id,p.name]));
+    const d=loadPlayers();
+    data.forEach(t=>{ const key='u:'+t.opponent_id, was=d.tally[key]||{}; d.tally[key]={name:names.get(t.opponent_id)||was.name||'Player',net:t.net,games:t.games}; });
+    savePlayers(d); if(!$('#pf-players').hidden) renderPlayers();
+  }
+};
+
 /* ----- sign in, guests and offline ----- */
 function loginErr(msg){ const e=$('#login-err'); e.textContent=msg||''; e.hidden=!msg; }
 /* A player's permanent ID (account fingerprint): a hash of their account UID. The server sends the same value. */
@@ -2691,6 +2791,7 @@ function enterOnline(sess,guest){
   if(sess&&!guest){ const meta=sess.user.user_metadata||{}; if(!store.get('thirteen.profile',null)||!account.named){ const nm=(meta.display_name||meta.full_name||meta.name||'').replace(/[^A-Za-z0-9 _.-]/g,'').slice(0,16); if(nm.length>=3){ account.name=nm; } account.named=true; store.set('thirteen.profile',account); } }
   $('#who-line').textContent=guest?`Playing as ${profile.name} (guest) · `:`${profile.name} · `;
   if(sess&&!guest&&sess.user&&sess.user.id&&window.crypto&&crypto.subtle) playerIdFor(sess.user.id).then(setPlayerId).catch(()=>{});
+  if(sess&&!guest&&sess.user&&sess.user.id) CLOUD.start(sess.user.id); else CLOUD.stop();
   NET.connect(); show('menu');
 }
 $('#login-form').addEventListener('submit',async e=>{
@@ -2731,7 +2832,7 @@ $('#btn-google').onclick=async()=>{
 };
 $('#btn-guest').onclick=()=>{ loginErr(''); $('#login-pass').value=''; enterOnline(null,true); };
 $('#btn-offline').onclick=()=>{ loginErr(''); NET.disconnect(); startSession(false); $('#who-line').textContent='Offline · '; show('menu'); };
-$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; account.pid=null; store.set('thirteen.profile',account); $('#lobby-online').hidden=true; show('login'); };
+$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } CLOUD.stop(); NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; account.pid=null; store.set('thirteen.profile',account); $('#lobby-online').hidden=true; show('login'); };
 if(sb){
   // keep the server's copy of your sign-in fresh, finish Google / email-link sign-ins, and handle password resets
   sb.auth.onAuthStateChange((event,sess)=>{
@@ -2753,7 +2854,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261107-125337) */
+/* Offline support + automatic updates (build 20261107-165710) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
