@@ -565,6 +565,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .online-count[hidden]{display:none}
 .online-count .dot-live{width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 6px var(--ok)}
 .badge-on{display:inline-grid; place-items:center; height:20px; padding:0 7px; border-radius:10px; background:var(--ok); color:#06210f; font:700 12px var(--body,system-ui); vertical-align:middle; margin-left:6px}
+.adm-db{margin:-4px 0 0; font-size:13px; color:var(--muted); display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+.adm-db .dbdot{width:8px; height:8px; border-radius:50%; background:#777}
+.adm-db .dbdot.ok{background:var(--ok)} .adm-db .dbdot.bad{background:#ff6b6b}
+.adm-db b{color:#ff8f8f}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -603,6 +607,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
     <button class="icon-btn" id="admin-back" aria-label="Back to menu">‹</button>
     <h2>Admin</h2><span class="adm-online" id="adm-online"></span>
   </div>
+  <p class="adm-db" id="adm-db"></p>
   <div class="panel">
     <div class="label">Announcement</div>
     <textarea id="adm-text" maxlength="200" rows="2" placeholder="Shown to everyone online, e.g. Server restart in 5 minutes"></textarea>
@@ -614,7 +619,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   </div>
   <div class="panel">
     <div class="label">New featured table</div>
-    <p class="hint" style="margin:0">Stays open when empty and is pinned to the top of the lobby. Lasts until the server restarts; ask Claude to make one permanent.</p>
+    <p class="hint" style="margin:0">Stays open when empty and is pinned to the top of the lobby. Saved, so it comes back after server restarts.</p>
     <input id="adm-name" type="text" maxlength="24" placeholder="Table name">
     <div class="set-row"><span>Seats</span><div class="seg" id="adm-seats"><button data-v="2">2</button><button data-v="3">3</button><button data-v="4" aria-pressed="true">4</button></div></div>
     <div class="set-row"><span>Scoring</span><div class="seg" id="adm-match"><button data-v="endless" aria-pressed="true">Endless</button><button data-v="target">Target</button><button data-v="casual">Casual</button></div></div>
@@ -634,7 +639,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   <div class="panel">
     <div class="label">Banned</div>
     <div id="adm-banned"></div>
-    <p class="hint" style="margin:0">Bans last until the server restarts. For a permanent ban, also ban the account in Supabase (Authentication → Users).</p>
+    <p class="hint" style="margin:0">Bans are saved and survive server restarts.</p>
   </div>
 </section>
 
@@ -2627,6 +2632,9 @@ $('#adm-cpu-save').onclick=()=>{
 function renderAdmin(m){
   if(!NET.admin) return;
   $('#adm-online').textContent=`${m.online} online`;
+  const d=m.db||{status:'not configured'}, ok=d.status==='connected';
+  $('#adm-db').innerHTML=`<span class="dbdot ${ok?'ok':d.status==='error'?'bad':''}"></span>Database: ${ok?'connected':esc(d.status)}${ok?` · ${d.saved} saves${d.failed?` · <b>${d.failed} failed</b>`:''}`:''}${d.error&&!ok?` <small>${esc(d.error).slice(0,120)}</small>`:''}`;
+  ADM.dbOk=ok;
   if(!ADM.cpuSet&&m.cpu){ ADM.cpuSet=true; const c=m.cpu;
     document.querySelectorAll('#adm-cpu-sizes button').forEach(b=>b.setAttribute('aria-pressed',c.sizes.includes(+b.dataset.v)));
     $('#adm-cpu-lo').value=c.minLevel; $('#adm-cpu-hi').value=c.maxLevel; CPUM.match=c.match;
@@ -2745,7 +2753,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261106-155728) */
+/* Offline support + automatic updates (build 20261107-125337) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
