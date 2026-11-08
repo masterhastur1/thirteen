@@ -597,6 +597,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .fr-addbar{display:flex; gap:8px; padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--line); background:var(--panel,#16201a)}
 .fr-addbar input{flex:1; min-width:0; background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:16px var(--body,system-ui)}
 .fr-addbar .btn{flex:none; min-height:44px; padding:0 18px}
+.fr-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#5b605c; margin-right:8px; vertical-align:middle; position:relative; top:-1px}
+.fr-dot.on{background:var(--ok); box-shadow:0 0 6px var(--ok)} .fr-dot.game{background:#e8c26a}
+.fr-row{padding:11px 0}
+.crop-wrap{position:relative; width:260px; height:260px; margin:4px auto; border-radius:50%; overflow:hidden; background:#000; touch-action:none}
+.crop-wrap canvas{width:260px; height:260px; display:block; cursor:grab; touch-action:none}
+.crop-ring{position:absolute; inset:0; border-radius:50%; box-shadow:inset 0 0 0 3px var(--brass); pointer-events:none}
+#crop-zoom{width:100%; accent-color:var(--brass)}
+.pf-photo-row{display:flex; gap:8px} .pf-photo-row .btn{flex:1; min-width:0}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -734,6 +742,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
       <p class="form-err" id="pf-err" hidden></p>
     </form>
     <p class="hint" id="pf-guest-note" hidden>Guests can't change their avatar or name. Log in to customize.</p>
+  </div>
+  <div class="panel">
+    <div class="label">Photo</div>
+    <div class="row pf-photo-row"><button class="btn btn-ghost" id="pf-photo-up">Upload photo</button><button class="btn btn-ghost" id="pf-photo-rm" hidden>Remove photo</button></div>
+    <input type="file" id="pf-photo-file" accept="image/*" hidden>
+    <p class="hint" style="margin:0">Only you see your photo for now. Other players see your color and animal.</p>
   </div>
   <div class="panel">
     <div class="label">Color</div>
@@ -1906,9 +1920,47 @@ function startSession(guest){
   $('#btn-logout').textContent=guest?'Exit guest':'Log out';
 }
 function avatarHTML(size,p=profile){
+  if(p.photo&&/^data:image\/(jpeg|png|webp);base64,/.test(p.photo)) return `<span class="av" style="width:${size}px;height:${size}px;background:${p.color} center/cover url('${p.photo}')"></span>`;
   return `<span class="av" style="width:${size}px;height:${size}px;background:${p.color};font-size:${Math.round(size*(p.animal?.58:.5))}px">${p.animal||esc((p.name||'?')[0].toUpperCase())}</span>`;
 }
 function saveProfile(){if(!session.guest) store.set('thirteen.profile',account); renderProfile()}
+/* Photo avatar: pick an image, drag and zoom it inside the circle, and it's saved small (256×256) on this phone */
+$('#pf-photo-up').onclick=()=>{ if(session.guest) return; $('#pf-photo-file').value=''; $('#pf-photo-file').click(); };
+$('#pf-photo-rm').onclick=()=>{ profile.photo=null; saveProfile(); toast('Photo removed.','info'); };
+$('#pf-photo-file').onchange=e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  if(!/^image\//.test(f.type)) return toast('That file isn\'t a picture.');
+  const url=URL.createObjectURL(f), img=new Image();
+  img.onload=()=>openCropper(img,url); img.onerror=()=>{ URL.revokeObjectURL(url); toast('Couldn\'t open that picture.'); }; img.src=url;
+};
+function openCropper(img,url){
+  const V=260;   // the circle on screen
+  const base=Math.max(V/img.width,V/img.height);   // smallest zoom that still fills the circle
+  let zoom=1, x=0, y=0;   // x,y: offset of the picture's center from the circle's center
+  openSheet(`<h3>Fit your photo</h3>
+    <div class="crop-wrap"><canvas id="crop-cv" width="${V*2}" height="${V*2}"></canvas><div class="crop-ring"></div></div>
+    <p class="hint" style="text-align:center;margin:0">Drag to move · slide to zoom</p>
+    <input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom">
+    <div class="row"><button class="btn btn-ghost" id="crop-cancel">Cancel</button><button class="btn btn-brass" id="crop-save">Save</button></div>`);
+  const cv=$('#crop-cv'), cx=cv.getContext('2d');
+  const clamp=()=>{ const s=base*zoom, mx=Math.max(0,(img.width*s-V)/2), my=Math.max(0,(img.height*s-V)/2); x=Math.max(-mx,Math.min(mx,x)); y=Math.max(-my,Math.min(my,y)); };
+  const draw=(ctx,size)=>{ const k=size/V, s=base*zoom*k, w=img.width*s, h=img.height*s;
+    ctx.clearRect(0,0,size,size); ctx.drawImage(img,size/2-w/2+x*k,size/2-h/2+y*k,w,h); };
+  const paint=()=>{ clamp(); draw(cx,V*2); }; paint();
+  let drag=null;
+  cv.onpointerdown=e=>{ drag={px:e.clientX,py:e.clientY,x,y}; cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove=e=>{ if(!drag) return; x=drag.x+(e.clientX-drag.px); y=drag.y+(e.clientY-drag.py); paint(); };
+  cv.onpointerup=cv.onpointercancel=()=>{ drag=null; };
+  $('#crop-zoom').oninput=e=>{ zoom=+e.target.value; paint(); };
+  cv.onwheel=e=>{ e.preventDefault(); zoom=Math.max(1,Math.min(4,zoom*(e.deltaY<0?1.08:1/1.08))); $('#crop-zoom').value=zoom; paint(); };
+  const done=()=>{ URL.revokeObjectURL(url); closeSheet(); };
+  $('#crop-cancel').onclick=done;
+  $('#crop-save').onclick=()=>{
+    const out=document.createElement('canvas'); out.width=out.height=256; const o=out.getContext('2d');
+    o.fillStyle=profile.color||'#333'; o.fillRect(0,0,256,256); draw(o,256);
+    profile.photo=out.toDataURL('image/jpeg',0.85); done(); saveProfile(); toast('Photo saved.','info');
+  };
+}
 function renderProfile(){
   $('#pr-mini').innerHTML=avatarHTML(42); $('#pr-mini-name').textContent=profile.name;
   $('#pf-avatar').innerHTML=avatarHTML(76); $('#pf-name').textContent=profile.name; showPlayerId();
@@ -1918,6 +1970,7 @@ function renderProfile(){
   $('#pf-animals').innerHTML=`<button class="swatch none" data-a="" aria-label="No animal, show initial" aria-pressed="${!profile.animal}">${esc(profile.name[0].toUpperCase())}</button>`+
     AV_ANIMALS.map(a=>`<button class="swatch" data-a="${a}" aria-pressed="${profile.animal===a}">${a}</button>`).join('');
   document.querySelectorAll('#pf-colors .swatch').forEach(b=>b.onclick=()=>{if(session.guest)return; profile.color=b.dataset.c;saveProfile()});
+  $('#pf-photo-up').disabled=session.guest; $('#pf-photo-rm').hidden=!profile.photo||session.guest; $('#pf-photo-up').textContent=profile.photo?'Change photo':'Upload photo';
   document.querySelectorAll('#pf-animals .swatch').forEach(b=>b.onclick=()=>{if(session.guest)return; profile.animal=b.dataset.a||null;saveProfile()});
 }
 $('#btn-profile').onclick=()=>{renderProfile();pfTab('me');show('profile')};
@@ -2093,7 +2146,7 @@ function drawFriends(loading){
     if(f.status!=='offline'&&seated) return `<button class="fr-btn" data-inv="${f.id}">Invite</button>`;
     return '';
   };
-  const row=(f,btns)=>`<div class="fr-row${f.kind==='friend'&&f.status==='offline'?' off':''}">${frAvatar(f)}<span class="fr-nm"><b>${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
+  const row=(f,btns)=>`<div class="fr-row${f.kind==='friend'&&f.status==='offline'?' off':''}"><span class="fr-nm"><b>${f.kind==='friend'?`<i class="fr-dot ${f.status==='offline'?'':f.status==='online'?'on':'game'}"></i>`:''}${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
   const on=friends.filter(f=>f.status!=='offline'), off=friends.filter(f=>f.status==='offline');
   const ready=(typeof NET!=='undefined')&&NET.ready;
   const body=session.guest?'<p class="fr-empty">Log in to add friends.</p>'
@@ -2940,7 +2993,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261107-223857) */
+/* Offline support + automatic updates (build 20261108-050410) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
