@@ -583,6 +583,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .invite-pop small{font-family:var(--cond); letter-spacing:.14em; text-transform:uppercase; color:var(--brass); font-size:11px}
 .invite-pop b{font-size:16px} .invite-pop span{color:var(--muted); font-size:13px}
 .invite-pop .row{margin-top:8px}
+#fr-drawer{position:fixed; inset:0; z-index:150}
+#fr-drawer .fr-back{position:absolute; inset:0; background:rgba(0,0,0,.45); opacity:0; transition:opacity .2s}
+#fr-drawer .fr-panel{position:absolute; top:0; right:0; bottom:0; width:min(360px,88vw); background:var(--panel,#16201a); border-left:1px solid var(--brass); box-shadow:-14px 0 34px rgba(0,0,0,.55); display:flex; flex-direction:column; transform:translateX(100%); transition:transform .22s ease-out; padding-top:env(safe-area-inset-top,0px)}
+#fr-drawer.open .fr-back{opacity:1} #fr-drawer.open .fr-panel{transform:none}
+.fr-top{display:flex; align-items:center; justify-content:space-between; padding:14px 14px 6px}
+.fr-top h3{margin:0}
+.fr-close{width:36px; height:36px; font-size:26px; line-height:1; color:var(--cream,#eee); background:none; border-radius:9px}
+.fr-list{flex:1; overflow-y:auto; padding:0 14px 10px; -webkit-overflow-scrolling:touch}
+.fr-head{margin:14px 0 2px; font-family:var(--cond); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--brass)}
+.fr-empty.sm{font-size:13px; margin:6px 0}
+.fr-row.off .fr-nm b{color:#8a8f8b} .fr-row.off .fr-av{filter:grayscale(1) brightness(.7)}
+.fr-addbar{display:flex; gap:8px; padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--line); background:var(--panel,#16201a)}
+.fr-addbar input{flex:1; min-width:0; background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:16px var(--body,system-ui)}
+.fr-addbar .btn{flex:none; min-height:44px; padding:0 18px}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -1050,7 +1064,7 @@ function cardHTML(c,w,x,y,extra=''){
   const red=c.s===1||c.s===2, fc=c.r>=8&&c.r<=10;
   return `<div class="card ${red?'red':''} s${c.s} ${extra}" data-id="${c.id}" style="--w:${w}px;left:${x}px;${y!=null?'top:'+y+'px;':''}" aria-label="${RANKS[c.r]} of ${SUITN[c.s]}s"><span class="tl">${RANKS[c.r]}<i>${SUITS[c.s]}</i></span>${fc?`<span class="face">${RANKS[c.r]}</span>`:`<span class="pip">${SUITS[c.s]}</span>`}</div>`;
 }
-function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile','admin'].forEach(s=>$('#'+s).hidden=s!==id); if(id!=='admin'&&(typeof NET!=='undefined')&&NET.adminOpen){ NET.adminOpen=false; NET.send({t:'admin',op:'closeView'}); }}
+function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile','admin'].forEach(s=>$('#'+s).hidden=s!==id); if(document.getElementById('fr-drawer')) closeFriends(); if(id!=='admin'&&(typeof NET!=='undefined')&&NET.adminOpen){ NET.adminOpen=false; NET.send({t:'admin',op:'closeView'}); }}
 let toastT;
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast'+(kind?' '+kind:'');t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,kind==='info'?2200:3200)}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -2079,25 +2093,38 @@ function drawFriends(loading){
     if(f.status!=='offline'&&seated) return `<button class="fr-btn" data-inv="${f.id}">Invite</button>`;
     return '';
   };
-  const row=(f,btns)=>`<div class="fr-row">${frAvatar(f)}<span class="fr-nm"><b>${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
+  const row=(f,btns)=>`<div class="fr-row${f.kind==='friend'&&f.status==='offline'?' off':''}">${frAvatar(f)}<span class="fr-nm"><b>${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
+  const on=friends.filter(f=>f.status!=='offline'), off=friends.filter(f=>f.status==='offline');
+  const ready=(typeof NET!=='undefined')&&NET.ready;
   const body=session.guest?'<p class="fr-empty">Log in to add friends.</p>'
-    :((typeof NET==='undefined')||!NET.ready)?'<p class="fr-empty">Connect to the server to see your friends.</p>'
+    :!ready?'<p class="fr-empty">Connect to the server to see your friends.</p>'
     :loading&&!FRIENDS.length?'<p class="fr-empty">Loading…</p>'
-    :`${received.length?`<div class="label">Friend requests</div>${received.map(f=>row(f,`<button class="fr-btn" data-acc="${f.id}">Accept</button><button class="fr-x" data-rm="${f.id}" aria-label="Decline">✕</button>`)).join('')}`:''}
-      ${friends.length?`<div class="label" style="margin-top:8px">Friends</div>${friends.map(f=>row(f,act(f)+`<button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">✕</button>`)).join('')}`
+    :`${received.length?`<div class="fr-head">Friend requests</div>${received.map(f=>row(f,`<button class="fr-btn" data-acc="${f.id}">Accept</button><button class="fr-x" data-rm="${f.id}" aria-label="Decline">✕</button>`)).join('')}`:''}
+      ${friends.length?`<div class="fr-head">Online · ${on.length}</div>${on.length?on.map(f=>row(f,act(f)+`<button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">✕</button>`)).join(''):'<p class="fr-empty sm">No friends online right now.</p>'}
+        ${off.length?`<div class="fr-head">Offline · ${off.length}</div>${off.map(f=>row(f,`<button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">✕</button>`)).join('')}`:''}`
         :`<p class="fr-empty">No friends yet. Add someone by their screen name or player ID (it's under their name in Profile).</p>`}
-      ${sent.length?`<div class="label" style="margin-top:8px">Sent</div>${sent.map(f=>row(f,`<button class="fr-x" data-rm="${f.id}" aria-label="Cancel request">✕</button>`)).join('')}`:''}
-      <div class="fr-add"><input id="fr-input" type="text" maxlength="24" placeholder="Screen name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="fr-add">Add</button></div>`;
-  const keep=$('#fr-input')&&$('#fr-input').value;
-  openSheet(`<div id="fr-sheet"><h3>Friends${online?` <span class="badge-on">${online} online</span>`:''}</h3>${body}<button class="btn btn-ghost" id="fr-close" style="margin-top:12px">Close</button></div>`);
-  if(keep&&$('#fr-input')) $('#fr-input').value=keep;
-  $('#fr-close').onclick=()=>{ closeSheet(); if((typeof NET!=='undefined')&&NET.ready) NET.send({t:'friends',open:false}); };
+      ${sent.length?`<div class="fr-head">Sent</div>${sent.map(f=>row(f,`<button class="fr-x" data-rm="${f.id}" aria-label="Cancel request">✕</button>`)).join('')}`:''}`;
+  const keep=$('#fr-input')&&$('#fr-input').value, scroll=$('#fr-list')?$('#fr-list').scrollTop:0;
+  let d=document.getElementById('fr-drawer');
+  if(!d){ d=document.createElement('div'); d.id='fr-drawer'; document.body.appendChild(d); requestAnimationFrame(()=>d.classList.add('open')); }
+  d.innerHTML=`<div class="fr-back" data-close></div><aside class="fr-panel" role="dialog" aria-label="Friends">
+    <div class="fr-top"><h3>Friends</h3><button class="fr-close" data-close aria-label="Close">×</button></div>
+    <div class="fr-list" id="fr-list">${body}</div>
+    ${!session.guest&&ready?`<div class="fr-addbar"><input id="fr-input" type="text" maxlength="24" placeholder="Name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="fr-add">Add</button></div>`:''}
+  </aside>`;
+  if(keep&&$('#fr-input')) $('#fr-input').value=keep; if($('#fr-list')) $('#fr-list').scrollTop=scroll;
+  d.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeFriends);
   const add=$('#fr-add'); if(add){ const go=()=>{ const v=$('#fr-input').value.trim(); if(!v) return $('#fr-input').focus(); NET.send({t:'friendAdd',q:v}); $('#fr-input').value=''; };
     add.onclick=go; $('#fr-input').onkeydown=e=>{ if(e.key==='Enter') go(); }; }
-  document.querySelectorAll('#fr-sheet [data-acc]').forEach(b=>b.onclick=()=>NET.send({t:'friendAccept',id:b.dataset.acc}));
-  document.querySelectorAll('#fr-sheet [data-rm]').forEach(b=>twoTap(b,'✓?',()=>NET.send({t:'friendRemove',id:b.dataset.rm})));
-  document.querySelectorAll('#fr-sheet [data-inv]').forEach(b=>b.onclick=()=>{ NET.send({t:'invite',id:b.dataset.inv}); b.disabled=true; b.textContent='Sent'; });
-  document.querySelectorAll('#fr-sheet [data-join]').forEach(b=>b.onclick=()=>{ closeSheet(); NET.send({t:'friends',open:false}); NET.send({t:'join',id:b.dataset.join}); });
+  d.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>NET.send({t:'friendAccept',id:b.dataset.acc}));
+  d.querySelectorAll('[data-rm]').forEach(b=>twoTap(b,'✓?',()=>NET.send({t:'friendRemove',id:b.dataset.rm})));
+  d.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>{ NET.send({t:'invite',id:b.dataset.inv}); b.disabled=true; b.textContent='Sent'; });
+  d.querySelectorAll('[data-join]').forEach(b=>b.onclick=()=>{ closeFriends(); NET.send({t:'join',id:b.dataset.join}); });
+}
+function closeFriends(){
+  const d=document.getElementById('fr-drawer'); if(!d) return;
+  d.classList.remove('open'); setTimeout(()=>d.remove(),220);
+  if((typeof NET!=='undefined')&&NET.ready) NET.send({t:'friends',open:false});
 }
 /* An invite from another player: Join takes you to their table (leaving yours if you're at one) */
 function showInvite(m){
@@ -2462,7 +2489,7 @@ function onServer(m){
   switch(m.t){
     case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; if(m.pid) setPlayerId(m.pid); $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
     case 'admin': renderAdmin(m); break;
-    case 'friends': FRIENDS=m.list||[]; friendsOnline(); if(document.getElementById('fr-sheet')&&!$('#overlay').hidden) drawFriends(); break;
+    case 'friends': FRIENDS=m.list||[]; friendsOnline(); if(document.getElementById('fr-drawer')) drawFriends(); break;
     case 'friendsCount': friendsCount(m.online||0,m.requests||0); break;
     case 'invited': showInvite(m); break;
     case 'online': ['#lobby-online'].forEach(id=>{ const el=$(id); el.innerHTML=`<span class="dot-live"></span>${m.n} player${m.n===1?'':'s'} online`; el.hidden=false; }); break;
@@ -2913,7 +2940,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261107-201353) */
+/* Offline support + automatic updates (build 20261107-223857) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
