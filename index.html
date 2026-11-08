@@ -2156,13 +2156,13 @@ function drawFriends(loading){
   const friends=FRIENDS.filter(f=>f.kind==='friend').sort((a,b)=>(a.status==='offline')-(b.status==='offline')||a.name.localeCompare(b.name));
   const received=FRIENDS.filter(f=>f.kind==='received'), sent=FRIENDS.filter(f=>f.kind==='sent');
   const online=friends.filter(f=>f.status!=='offline').length;
-  const sub=f=>f.status==='online'?'Online · in the lobby':f.status==='playing'?`Playing · ${esc(f.table.name)}`:f.status==='table'?`At ${esc(f.table.name)}`:`Last seen ${ago(f.lastSeen)}`;
+  const sub=f=>f.status==='online'?'Online · in the lobby':f.status==='playing'?`Playing · ${esc(f.table.name)}`:f.status==='table'?`At ${esc(f.table.name)}`:'';   // offline friends: just the name
   const act=f=>{
     if((f.status==='playing'||f.status==='table')&&f.table&&f.table.id&&!seated) return `<button class="fr-btn" data-join="${f.table.id}">${f.status==='playing'?'Watch':'Join'}</button>`;
     if(f.status!=='offline'&&seated) return NET.table.seats.some(x=>x.id==='u:'+f.id)?'<span class="fr-note">At your table</span>':`<button class="fr-btn" data-inv="${f.id}">Invite</button>`;
     return '';
   };
-  const row=(f,btns)=>`<div class="fr-row${f.kind==='friend'&&f.status==='offline'?' off':''}${f.kind==='friend'?' tap':''}${f.kind==='friend'&&drawFriends.open===f.id?' open':''}" ${f.kind==='friend'?`data-tap="${f.id}"`:''}><span class="fr-nm"><b>${f.kind==='friend'?`<i class="fr-dot ${f.status==='offline'?'':f.status==='online'?'on':'game'}"></i>`:''}${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
+  const row=(f,btns)=>`<div class="fr-row${f.kind==='friend'&&f.status==='offline'?' off':''}${f.kind==='friend'?' tap':''}${f.kind==='friend'&&drawFriends.open===f.id?' open':''}" ${f.kind==='friend'?`data-tap="${f.id}"`:''}><span class="fr-nm"><b>${f.kind==='friend'?`<i class="fr-dot ${f.status==='offline'?'':f.status==='online'?'on':'game'}"></i>`:''}${esc(f.name)}</b>${(t=>t?`<small>${t}</small>`:'')(f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent')}</span>${btns}</div>`;
   const on=friends.filter(f=>f.status!=='offline'), off=friends.filter(f=>f.status==='offline');
   const ready=(typeof NET!=='undefined')&&NET.ready;
   const body=session.guest?'<p class="fr-empty">Log in to add friends.</p>'
@@ -3013,7 +3013,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-130005) */
+/* Offline support + automatic updates (build 20261108-165729) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
