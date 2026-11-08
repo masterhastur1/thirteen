@@ -605,6 +605,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .crop-ring{position:absolute; inset:0; border-radius:50%; box-shadow:inset 0 0 0 3px var(--brass); pointer-events:none}
 #crop-zoom{width:100%; accent-color:var(--brass)}
 .pf-photo-row{display:flex; gap:8px} .pf-photo-row .btn{flex:1; min-width:0}
+#waiting .topline .friends-btn{margin-left:auto; width:38px; height:38px}
+.fr-row.tap{cursor:pointer; flex-wrap:wrap}
+.fr-acts{display:none; width:100%; gap:8px; justify-content:flex-end; padding-top:8px}
+.fr-row.open .fr-acts{display:flex}
+.fr-row.open{background:rgba(255,255,255,.04); margin:0 -8px; padding:11px 8px; border-radius:10px}
+.fr-acts .fr-x{width:auto; padding:0 10px; font-size:13px; border:1px solid var(--line)}
+.fr-note{color:var(--muted); font-size:12px; align-self:center}
+.inv-layer{position:fixed; inset:0; z-index:160; background:rgba(0,0,0,.4); display:flex; align-items:flex-start; justify-content:center; padding:90px 16px 16px}
+.inv-card{position:relative; width:min(320px,100%); background:var(--panel,#16201a); border:1px solid var(--brass); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px; box-shadow:0 14px 34px rgba(0,0,0,.6)}
+.inv-card b{font-size:15px}
+.inv-x{position:absolute; top:4px; right:6px; width:30px; height:30px; font-size:22px; color:var(--cream,#eee); background:none}
+.inv-line{display:flex; gap:8px}
+.inv-line input{flex:1; min-width:0; background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font:16px var(--body,system-ui)}
+.inv-line .btn{flex:none; min-height:38px; padding:0 14px; font-size:14px}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -782,7 +796,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 <!-- ============ LOBBY ============ -->
 <section id="lobby" class="screen" hidden>
   <div class="lobby-tools">
-    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="online">Online</button><button data-v="cpu">CPU</button></div><button class="friends-btn" id="lb-friends" aria-label="Friends"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.6.2 4.4 1.8 5 4.8"/></svg><b id="lb-friends-n" hidden>0</b></button></div>
+    <div class="lb-top"><button class="icon-btn" id="lobby-back" aria-label="Back to menu">‹</button><div class="seg" id="lb-filter"><button data-v="all">All</button><button data-v="online">Online</button><button data-v="cpu">CPU</button></div><button class="friends-btn" id="lb-friends" aria-label="Friends"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.6.2 4.4 1.8 5 4.8"/></svg><b id="lb-friends-n" class="fr-n" hidden>0</b></button></div>
     <div class="lobby-tools-row">
       <button class="sort-btn" id="lb-sort-btn"><span>Sort</span><i class="tri" aria-hidden="true"></i></button>
       <button class="priv-btn" id="lb-private"><span class="lock" aria-hidden="true"></span>Private</button>
@@ -839,6 +853,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   <div class="topline">
     <button class="icon-btn" id="wr-leave" aria-label="Leave table">‹</button>
     <h2 id="wr-title">Table</h2>
+    <button class="friends-btn" id="wr-friends" aria-label="Friends"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.6.2 4.4 1.8 5 4.8"/></svg><b class="fr-n" hidden>0</b></button>
   </div>
   <div class="panel" id="wr-rules"></div>
   <div class="panel">
@@ -1078,7 +1093,7 @@ function cardHTML(c,w,x,y,extra=''){
   const red=c.s===1||c.s===2, fc=c.r>=8&&c.r<=10;
   return `<div class="card ${red?'red':''} s${c.s} ${extra}" data-id="${c.id}" style="--w:${w}px;left:${x}px;${y!=null?'top:'+y+'px;':''}" aria-label="${RANKS[c.r]} of ${SUITN[c.s]}s"><span class="tl">${RANKS[c.r]}<i>${SUITS[c.s]}</i></span>${fc?`<span class="face">${RANKS[c.r]}</span>`:`<span class="pip">${SUITS[c.s]}</span>`}</div>`;
 }
-function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile','admin'].forEach(s=>$('#'+s).hidden=s!==id); if(document.getElementById('fr-drawer')) closeFriends(); if(id!=='admin'&&(typeof NET!=='undefined')&&NET.adminOpen){ NET.adminOpen=false; NET.send({t:'admin',op:'closeView'}); }}
+function show(id){const was=$('#'+id).hidden; ['login','menu','setup','game','settings','lobby','newtable','waiting','profile','admin'].forEach(s=>$('#'+s).hidden=s!==id); if(was&&document.getElementById('fr-drawer')) closeFriends(); if(id!=='admin'&&(typeof NET!=='undefined')&&NET.adminOpen){ NET.adminOpen=false; NET.send({t:'admin',op:'closeView'}); }}
 let toastT;
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast'+(kind?' '+kind:'');t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,kind==='info'?2200:3200)}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -2125,9 +2140,9 @@ function renderLobby(){
 $('#lb-filter').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.filter=b.dataset.v;renderLobby()});
 /* Friends: opens over the lobby. The base for now; the list fills in once friends are saved to accounts. */
 let FRIENDS=[];   // from the server: [{id, name, pid, avatar, kind:'friend'|'received'|'sent', status, table, lastSeen}]
-$('#lb-friends').onclick=openFriends;
+$('#lb-friends').onclick=openFriends; $('#wr-friends').onclick=openFriends;
 // the number on the lobby's friends button: friend requests (orange) take priority over friends online (green)
-function friendsCount(online,requests){ const b=$('#lb-friends-n'); const n=requests||online; b.textContent=n; b.hidden=!n; b.classList.toggle('req',!!requests); }
+function friendsCount(online,requests){ const n=requests||online; document.querySelectorAll('.fr-n').forEach(b=>{ b.textContent=n; b.hidden=!n; b.classList.toggle('req',!!requests); }); }
 function friendsOnline(){ friendsCount(FRIENDS.filter(f=>f.kind==='friend'&&f.status!=='offline').length,FRIENDS.filter(f=>f.kind==='received').length); }
 const ago=t=>{ if(!t) return 'a while ago'; const m=(Date.now()-Date.parse(t))/60000; return m<2?'just now':m<60?Math.round(m)+'m ago':m<1440?Math.round(m/60)+'h ago':Math.round(m/1440)+'d ago'; };
 function frAvatar(f){ const a=f.avatar||{}; const c=/^#[0-9a-f]{6}$/i.test(a.color||'')?a.color:'#6b7280';
@@ -2144,18 +2159,18 @@ function drawFriends(loading){
   const sub=f=>f.status==='online'?'Online · in the lobby':f.status==='playing'?`Playing · ${esc(f.table.name)}`:f.status==='table'?`At ${esc(f.table.name)}`:`Last seen ${ago(f.lastSeen)}`;
   const act=f=>{
     if((f.status==='playing'||f.status==='table')&&f.table&&f.table.id&&!seated) return `<button class="fr-btn" data-join="${f.table.id}">${f.status==='playing'?'Watch':'Join'}</button>`;
-    if(f.status!=='offline'&&seated) return `<button class="fr-btn" data-inv="${f.id}">Invite</button>`;
+    if(f.status!=='offline'&&seated) return NET.table.seats.some(x=>x.id==='u:'+f.id)?'<span class="fr-note">At your table</span>':`<button class="fr-btn" data-inv="${f.id}">Invite</button>`;
     return '';
   };
-  const row=(f,btns)=>`<div class="fr-row${f.kind==='friend'&&f.status==='offline'?' off':''}"><span class="fr-nm"><b>${f.kind==='friend'?`<i class="fr-dot ${f.status==='offline'?'':f.status==='online'?'on':'game'}"></i>`:''}${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
+  const row=(f,btns)=>`<div class="fr-row${f.kind==='friend'&&f.status==='offline'?' off':''}${f.kind==='friend'?' tap':''}${f.kind==='friend'&&drawFriends.open===f.id?' open':''}" ${f.kind==='friend'?`data-tap="${f.id}"`:''}><span class="fr-nm"><b>${f.kind==='friend'?`<i class="fr-dot ${f.status==='offline'?'':f.status==='online'?'on':'game'}"></i>`:''}${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
   const on=friends.filter(f=>f.status!=='offline'), off=friends.filter(f=>f.status==='offline');
   const ready=(typeof NET!=='undefined')&&NET.ready;
   const body=session.guest?'<p class="fr-empty">Log in to add friends.</p>'
     :!ready?'<p class="fr-empty">Connect to the server to see your friends.</p>'
     :loading&&!FRIENDS.length?'<p class="fr-empty">Loading…</p>'
     :`${received.length?`<div class="fr-head">Friend requests</div>${received.map(f=>row(f,`<button class="fr-btn" data-acc="${f.id}">Accept</button><button class="fr-x" data-rm="${f.id}" aria-label="Decline">✕</button>`)).join('')}`:''}
-      ${friends.length?`<div class="fr-head">Online · ${on.length}</div>${on.length?on.map(f=>row(f,act(f)+`<button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">✕</button>`)).join(''):'<p class="fr-empty sm">No friends online right now.</p>'}
-        ${off.length?`<div class="fr-head">Offline · ${off.length}</div>${off.map(f=>row(f,`<button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">✕</button>`)).join('')}`:''}`
+      ${friends.length?`<div class="fr-head">Online · ${on.length}</div>${on.length?on.map(f=>row(f,`<span class="fr-acts">${act(f)}<button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">Remove</button></span>`)).join(''):'<p class="fr-empty sm">No friends online right now.</p>'}
+        ${off.length?`<div class="fr-head">Offline · ${off.length}</div>${off.map(f=>row(f,`<span class="fr-acts"><button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">Remove</button></span>`)).join('')}`:''}`
         :`<p class="fr-empty">No friends yet. Add someone by their screen name or player ID (it's under their name in Profile).</p>`}
       ${sent.length?`<div class="fr-head">Sent</div>${sent.map(f=>row(f,`<button class="fr-x" data-rm="${f.id}" aria-label="Cancel request">✕</button>`)).join('')}`:''}`;
   const keep=$('#fr-input')&&$('#fr-input').value, scroll=$('#fr-list')?$('#fr-list').scrollTop:0;
@@ -2170,8 +2185,9 @@ function drawFriends(loading){
   d.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeFriends);
   const add=$('#fr-add'); if(add){ const go=()=>{ const v=$('#fr-input').value.trim(); if(!v) return $('#fr-input').focus(); NET.send({t:'friendAdd',q:v}); $('#fr-input').value=''; };
     add.onclick=go; $('#fr-input').onkeydown=e=>{ if(e.key==='Enter') go(); }; }
+  d.querySelectorAll('[data-tap]').forEach(el=>el.onclick=e=>{ if(e.target.closest('button')) return; drawFriends.open=drawFriends.open===el.dataset.tap?null:el.dataset.tap; d.querySelectorAll('[data-tap]').forEach(x=>x.classList.toggle('open',x.dataset.tap===drawFriends.open)); });
   d.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>NET.send({t:'friendAccept',id:b.dataset.acc}));
-  d.querySelectorAll('[data-rm]').forEach(b=>twoTap(b,'✓?',()=>NET.send({t:'friendRemove',id:b.dataset.rm})));
+  d.querySelectorAll('[data-rm]').forEach(b=>twoTap(b,b.dataset.acc!==undefined||b.textContent==='✕'?'✓?':'Confirm',()=>NET.send({t:'friendRemove',id:b.dataset.rm})));
   d.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>{ NET.send({t:'invite',id:b.dataset.inv}); b.disabled=true; b.textContent='Sent'; });
   d.querySelectorAll('[data-join]').forEach(b=>b.onclick=()=>{ closeFriends(); NET.send({t:'join',id:b.dataset.join}); });
 }
@@ -2218,14 +2234,17 @@ function ghostTap(){
   if(G.spectator) return toast('You\'re already in line for the next game.','info');
   openInvite();
 }
-function openInvite(){
-  openSheet(`<h3>Invite a friend</h3>
-    <input id="inv-name" type="text" maxlength="24" placeholder="Screen name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false" class="inv-input">
-    <button class="btn btn-brass" id="inv-send">Invite</button>`);
-  const i=$('#inv-name'); setTimeout(()=>i.focus(),30);
+function openInvite(){   // a small pop-up: type a name or player ID, Invite
+  document.querySelector('.inv-layer')?.remove();
+  const layer=document.createElement('div'); layer.className='inv-layer';
+  layer.innerHTML=`<div class="inv-card" role="dialog" aria-label="Invite a friend"><button class="inv-x" aria-label="Close">×</button><b>Invite a friend</b>
+    <div class="inv-line"><input id="inv-name" type="text" maxlength="24" placeholder="Name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="inv-send">Invite</button></div></div>`;
+  document.body.appendChild(layer);
+  const i=$('#inv-name'), close=()=>layer.remove(); setTimeout(()=>i.focus(),30);
+  layer.onclick=e=>{ if(!e.target.closest('.inv-card')||e.target.closest('.inv-x')) close(); };
   const send=()=>{ const nm=i.value.trim(); if(!nm) return i.focus();
     if((typeof NET==='undefined')||!NET.ready) return toast('Connect to the server to invite players.');
-    NET.send({t:'invite',q:nm}); closeSheet(); };
+    NET.send({t:'invite',q:nm}); close(); };
   $('#inv-send').onclick=send; i.onkeydown=ev=>{ if(ev.key==='Enter') send(); };
 }
 function renderNewTable(){
@@ -2994,7 +3013,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-065255) */
+/* Offline support + automatic updates (build 20261108-130005) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
