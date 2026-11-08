@@ -1903,19 +1903,20 @@ function showRules(){
    Avatar = a color plus an optional animal (no animal shows your initial). The display name starts
    auto-generated; logged-in players can change it, guests can't change anything. */
 const AV_COLORS=['#e8c26a','#f08a6c','#e85d75','#c77dff','#7f8cff','#4fd1c5','#5ad08a','#a3d65c','#f2a65a','#d9b263','#8fb8de','#c9a27e'];
-const AV_ANIMALS=['🐸','🐧','🦆','🐙','🦊','🐻','🐼','🐨','🐷','🐮','🐵','🦉','🐢','🦀','🐳','🦥','🦦','🐔','🐹','🦝','🐌','🦔','🐝'];
+const AV_ANIMALS=['🐶','🐸','🐧','🦆','🐙','🦊','🐻','🐼','🐨','🐷','🐮','🐵','🦉','🐢','🦀','🐳','🦥','🦦','🐔','🐹','🦝','🐌','🦔','🐝'];
 const PF_ADJ=['Lucky','Sneaky','Brave','Jolly','Quiet','Swift','Clever','Bold','Sly','Mighty','Cosmic','Rusty','Velvet','Silver','Wild','Dapper'];
 const PF_NOUN=['Otter','Badger','Falcon','Moose','Panda','Raven','Gecko','Bison','Heron','Walrus','Lynx','Puffin','Yak','Ferret','Marmot','Newt'];
 const genName=()=>`${pickOf(PF_ADJ)}${pickOf(PF_NOUN)}${10+rngInt(990)}`;
 /* account = your saved profile (logged in). Guests get a temporary profile each visit that can't be changed. */
-const account=Object.assign({name:'',color:AV_COLORS[0],animal:null},store.get('thirteen.profile',{}));
+const account=Object.assign({name:'',color:AV_COLORS[0],animal:'🐶'},store.get('thirteen.profile',{}));
+if(!account.animal&&!account.animalPicked) account.animal='🐶';   // the default avatar is a puppy until you pick something else
 if(!account.name){account.name=genName(); store.set('thirteen.profile',account)}
 let profile=account;
 let session={guest:false};
 function startSession(guest){
   session.guest=guest;
   if(guest) guestStats=null; // every guest visit starts with a clean record
-  profile=guest?{name:`Guest${1000+rngInt(9000)}`,color:'#8a958a',animal:null}:account;
+  profile=guest?{name:`Guest${1000+rngInt(9000)}`,color:'#8a958a',animal:'🐶'}:account;
   $('#who-line').textContent=guest?`Playing as ${profile.name} (guest) · `:'';
   $('#btn-logout').textContent=guest?'Exit guest':'Log out';
 }
@@ -1971,7 +1972,7 @@ function renderProfile(){
     AV_ANIMALS.map(a=>`<button class="swatch" data-a="${a}" aria-pressed="${profile.animal===a}">${a}</button>`).join('');
   document.querySelectorAll('#pf-colors .swatch').forEach(b=>b.onclick=()=>{if(session.guest)return; profile.color=b.dataset.c;saveProfile()});
   $('#pf-photo-up').disabled=session.guest; $('#pf-photo-rm').hidden=!profile.photo||session.guest; $('#pf-photo-up').textContent=profile.photo?'Change photo':'Upload photo';
-  document.querySelectorAll('#pf-animals .swatch').forEach(b=>b.onclick=()=>{if(session.guest)return; profile.animal=b.dataset.a||null;saveProfile()});
+  document.querySelectorAll('#pf-animals .swatch').forEach(b=>b.onclick=()=>{if(session.guest)return; profile.animal=b.dataset.a||null; profile.animalPicked=true; saveProfile()});
 }
 $('#btn-profile').onclick=()=>{renderProfile();pfTab('me');show('profile')};
 function pfTab(v){
@@ -2993,7 +2994,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-050410) */
+/* Offline support + automatic updates (build 20261108-065255) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
