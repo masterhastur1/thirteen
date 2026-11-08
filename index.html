@@ -619,6 +619,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .inv-line{display:flex; gap:8px}
 .inv-line input{flex:1; min-width:0; background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font:16px var(--body,system-ui)}
 .inv-line .btn{flex:none; min-height:38px; padding:0 14px; font-size:14px}
+.sheet-x{position:sticky; top:-6px; align-self:flex-end; margin:-10px -8px -44px 0; z-index:3; width:36px; height:36px; border-radius:9px; font-size:26px; line-height:1; color:var(--cream,#eee); background:var(--panel); border:1px solid var(--line)}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -2427,12 +2428,12 @@ function showHistory(){
       <em class="${d>0?'pos':d<0?'neg':''}">${signed(d)||'0'}</em>
       ${h.fav?`<button class="hi-note${h.note?' has':''}" data-note="${k}" aria-label="${h.note?'Edit note':'Add a note'}">${NOTE_SVG}</button>`:''}</div>`}).join('')
     :histFilter==='fav'?'<p>No favorites yet. Tap the star on a game to keep it here.</p>':'<p>No games yet. Finished games appear here so you can review them later.</p>';
-  openSheet(`<div class="label">${histFilter==='fav'?'Favorites':`Last ${Math.min(all.length,HIST_RECENT)} games`} · this device</div><h3>Hand history</h3>
+  openSheet(`<button class="sheet-x" id="h-x" aria-label="Close hand history">×</button><div class="label">${histFilter==='fav'?'Favorites':`Last ${Math.min(all.length,HIST_RECENT)} games`} · ${session.guest?'this device':'your account'}</div><h3>Hand history</h3>
     <div class="hist-filter"><button data-f="new" aria-pressed="${histFilter==='new'}">Newest</button><button data-f="fav" aria-pressed="${histFilter==='fav'}">★ Favorites</button></div>
     <div class="hist-list">${items}</div><button class="btn btn-ghost" id="h-close">Close</button>`);
   const scroller=$('#overlay .sheet'); if(showHistory.keepScroll!=null){ scroller.scrollTop=showHistory.keepScroll; showHistory.keepScroll=null; }
   const update=(h,fn)=>{ const cur=store.get(HKEY,[]); const x=cur.find(y=>(y.id||'')===h.id||y.at===h.at); if(x){ fn(x); fn(h); saveHistoryList(cur); if(typeof CLOUD!=='undefined') CLOUD.saveMark(x); } };
-  $('#h-close').onclick=closeSheet;
+  $('#h-close').onclick=closeSheet; $('#h-x').onclick=closeSheet;
   document.querySelectorAll('.hist-filter button').forEach(b=>b.onclick=()=>{histFilter=b.dataset.f; showHistory();});
   document.querySelectorAll('.hist-item').forEach(b=>b.onclick=()=>showGame(list[+b.dataset.k]));
   document.querySelectorAll('.hi-star').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const h=list[+b.dataset.star];
@@ -3013,7 +3014,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-165729) */
+/* Offline support + automatic updates (build 20261108-170244) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
