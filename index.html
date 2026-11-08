@@ -569,6 +569,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .adm-db .dbdot{width:8px; height:8px; border-radius:50%; background:#777}
 .adm-db .dbdot.ok{background:var(--ok)} .adm-db .dbdot.bad{background:#ff6b6b}
 .adm-db b{color:#ff8f8f}
+.friends-btn b.req{background:#ff8a1f; color:#1d1000}
+.fr-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line)}
+.fr-av{width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-size:20px; flex:none; position:relative; color:#1a1a1a; font-weight:700}
+.fr-av i{position:absolute; right:-1px; bottom:-1px; width:12px; height:12px; border-radius:50%; border:2px solid var(--panel); background:#666}
+.fr-av i.on{background:var(--ok)} .fr-av i.game{background:#e8c26a} .fr-av i.none{display:none}
+.fr-nm{flex:1; min-width:0; display:flex; flex-direction:column} .fr-nm b{font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap} .fr-nm small{color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fr-btn{flex:none; min-height:32px; padding:0 11px; border-radius:8px; border:1px solid var(--brass); color:var(--brass); background:none; font-size:13px; font-weight:600}
+.fr-btn:disabled{opacity:.5}
+.fr-x{flex:none; width:30px; height:30px; border-radius:8px; color:var(--muted); background:none; border:1px solid transparent; font-size:14px}
+.fr-add{margin-top:12px}
+.invite-pop{position:fixed; z-index:210; left:50%; transform:translateX(-50%); bottom:calc(16px + env(safe-area-inset-bottom,0px)); width:min(420px,calc(100% - 24px)); background:#132017; border:1.5px solid var(--brass); border-radius:14px; padding:12px 14px; box-shadow:0 14px 34px rgba(0,0,0,.6); display:flex; flex-direction:column; gap:3px; animation:fadein .2s both}
+.invite-pop small{font-family:var(--cond); letter-spacing:.14em; text-transform:uppercase; color:var(--brass); font-size:11px}
+.invite-pop b{font-size:16px} .invite-pop span{color:var(--muted); font-size:13px}
+.invite-pop .row{margin-top:8px}
 </style>
 
 <!-- ============ LOGIN ============ -->
@@ -1036,7 +1050,7 @@ function cardHTML(c,w,x,y,extra=''){
   const red=c.s===1||c.s===2, fc=c.r>=8&&c.r<=10;
   return `<div class="card ${red?'red':''} s${c.s} ${extra}" data-id="${c.id}" style="--w:${w}px;left:${x}px;${y!=null?'top:'+y+'px;':''}" aria-label="${RANKS[c.r]} of ${SUITN[c.s]}s"><span class="tl">${RANKS[c.r]}<i>${SUITS[c.s]}</i></span>${fc?`<span class="face">${RANKS[c.r]}</span>`:`<span class="pip">${SUITS[c.s]}</span>`}</div>`;
 }
-function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile','admin'].forEach(s=>$('#'+s).hidden=s!==id); if(id!=='admin'&&window.NET&&NET.adminOpen){ NET.adminOpen=false; NET.send({t:'admin',op:'closeView'}); }}
+function show(id){['login','menu','setup','game','settings','lobby','newtable','waiting','profile','admin'].forEach(s=>$('#'+s).hidden=s!==id); if(id!=='admin'&&(typeof NET!=='undefined')&&NET.adminOpen){ NET.adminOpen=false; NET.send({t:'admin',op:'closeView'}); }}
 let toastT;
 function toast(msg,kind){const t=$('#toast');t.textContent=msg;t.className='toast'+(kind?' '+kind:'');t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,kind==='info'?2200:3200)}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -1910,7 +1924,7 @@ function loadStats(){
   if(session.guest) return guestStats||(guestStats=blankStats());
   const s=store.get('thirteen.stats',null); return s&&s.cpu&&s.human?s:blankStats();
 }
-function saveStats(s,fromCloud){ if(session.guest) guestStats=s; else { if(!fromCloud) s.updatedAt=Date.now(); store.set('thirteen.stats',s); if(!fromCloud&&window.CLOUD) CLOUD.pushStats(); } }
+function saveStats(s,fromCloud){ if(session.guest) guestStats=s; else { if(!fromCloud) s.updatedAt=Date.now(); store.set('thirteen.stats',s); if(!fromCloud&&typeof CLOUD!=='undefined') CLOUD.pushStats(); } }
 /* result: 'w' you went out first, 't' you also emptied your hand during the final lap, 'l' anything else */
 function recordStat(result){
   const opp=M.players.slice(1).filter(p=>!p.waiting); if(!opp.length) return;
@@ -1948,7 +1962,7 @@ function recordPlayerTally(t){
   savePlayers(d);
 }
 function renderPlayers(){
-  if(window.CLOUD&&!renderPlayers.pulling){ renderPlayers.pulling=true; CLOUD.pullTallies().finally(()=>{ renderPlayers.pulling=false; }); }
+  if((typeof CLOUD!=='undefined')&&!renderPlayers.pulling){ renderPlayers.pulling=true; CLOUD.pullTallies().finally(()=>{ renderPlayers.pulling=false; }); }
   const list=Object.values(loadPlayers().tally).sort((a,b)=>Math.abs(b.net)-Math.abs(a.net)||b.games-a.games);
   $('#pl-list').innerHTML=list.length?list.map(e=>`<div class="pl-row"><span class="nm"><span>${esc(e.name)}</span><small>${e.net>0?'Owes you':e.net<0?'You owe them':'All square'} · ${e.games} game${e.games===1?'':'s'}</small></span><b class="${e.net>0?'pos':e.net<0?'neg':''}">${signed(e.net)||'0'}</b></div>`).join('')
     :'<p class="st-empty">No games against other players yet. Play Endless or Target games online and your tally with each player shows up here.</p>';
@@ -2042,18 +2056,60 @@ function renderLobby(){
 }
 $('#lb-filter').querySelectorAll('button').forEach(b=>b.onclick=()=>{LB.filter=b.dataset.v;renderLobby()});
 /* Friends: opens over the lobby. The base for now; the list fills in once friends are saved to accounts. */
-let FRIENDS=[];   // [{id, name, status:'online'|'playing'|'offline', table}] once the friends list is live
+let FRIENDS=[];   // from the server: [{id, name, pid, avatar, kind:'friend'|'received'|'sent', status, table, lastSeen}]
 $('#lb-friends').onclick=openFriends;
-function friendsOnline(){ const n=FRIENDS.filter(f=>f.status!=='offline').length, b=$('#lb-friends-n'); b.textContent=n; b.hidden=!n; }
+// the number on the lobby's friends button: friend requests (orange) take priority over friends online (green)
+function friendsCount(online,requests){ const b=$('#lb-friends-n'); const n=requests||online; b.textContent=n; b.hidden=!n; b.classList.toggle('req',!!requests); }
+function friendsOnline(){ friendsCount(FRIENDS.filter(f=>f.kind==='friend'&&f.status!=='offline').length,FRIENDS.filter(f=>f.kind==='received').length); }
+const ago=t=>{ if(!t) return 'a while ago'; const m=(Date.now()-Date.parse(t))/60000; return m<2?'just now':m<60?Math.round(m)+'m ago':m<1440?Math.round(m/60)+'h ago':Math.round(m/1440)+'d ago'; };
+function frAvatar(f){ const a=f.avatar||{}; const c=/^#[0-9a-f]{6}$/i.test(a.color||'')?a.color:'#6b7280';
+  return `<span class="fr-av" style="background:${c}">${a.animal?esc(a.animal):esc((f.name||'?')[0].toUpperCase())}<i class="${f.kind!=='friend'?'none':f.status==='offline'?'':f.status==='online'?'on':'game'}"></i></span>`; }
 function openFriends(){
-  const online=FRIENDS.filter(f=>f.status!=='offline').length;
-  openSheet(`<h3>Friends${online?` <span class="badge-on">${online} online</span>`:''}</h3>
-    ${FRIENDS.length?'':`<p class="fr-empty">${session.guest?'Log in to add friends.':'No friends yet. Add someone by their screen name or player ID (it\'s under their name in Profile).'}</p>`}
-    ${session.guest?'':`<div class="fr-add"><input id="fr-input" type="text" maxlength="24" placeholder="Screen name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="fr-add">Add</button></div>`}
-    <button class="btn btn-ghost" id="fr-close" style="margin-top:12px">Close</button>`);
-  $('#fr-close').onclick=closeSheet;
-  const add=$('#fr-add'); if(add) add.onclick=()=>{ const v=$('#fr-input').value.trim(); if(!v) return $('#fr-input').focus();
-    closeSheet(); toast(`Friend request to ${v} noted. Friends lists start working once accounts save them.`,'info'); };
+  if(session.guest||(typeof NET==='undefined')||!NET.ready){ FRIENDS=[]; return drawFriends(); }
+  NET.send({t:'friends',open:true}); drawFriends(true);
+}
+function drawFriends(loading){
+  const seated=(typeof NET!=='undefined')&&NET.table&&NET.table.you>=0;
+  const friends=FRIENDS.filter(f=>f.kind==='friend').sort((a,b)=>(a.status==='offline')-(b.status==='offline')||a.name.localeCompare(b.name));
+  const received=FRIENDS.filter(f=>f.kind==='received'), sent=FRIENDS.filter(f=>f.kind==='sent');
+  const online=friends.filter(f=>f.status!=='offline').length;
+  const sub=f=>f.status==='online'?'Online · in the lobby':f.status==='playing'?`Playing · ${esc(f.table.name)}`:f.status==='table'?`At ${esc(f.table.name)}`:`Last seen ${ago(f.lastSeen)}`;
+  const act=f=>{
+    if((f.status==='playing'||f.status==='table')&&f.table&&f.table.id&&!seated) return `<button class="fr-btn" data-join="${f.table.id}">${f.status==='playing'?'Watch':'Join'}</button>`;
+    if(f.status!=='offline'&&seated) return `<button class="fr-btn" data-inv="${f.id}">Invite</button>`;
+    return '';
+  };
+  const row=(f,btns)=>`<div class="fr-row">${frAvatar(f)}<span class="fr-nm"><b>${esc(f.name)}</b><small>${f.kind==='friend'?sub(f):f.kind==='received'?'Wants to be friends':'Request sent'}</small></span>${btns}</div>`;
+  const body=session.guest?'<p class="fr-empty">Log in to add friends.</p>'
+    :((typeof NET==='undefined')||!NET.ready)?'<p class="fr-empty">Connect to the server to see your friends.</p>'
+    :loading&&!FRIENDS.length?'<p class="fr-empty">Loading…</p>'
+    :`${received.length?`<div class="label">Friend requests</div>${received.map(f=>row(f,`<button class="fr-btn" data-acc="${f.id}">Accept</button><button class="fr-x" data-rm="${f.id}" aria-label="Decline">✕</button>`)).join('')}`:''}
+      ${friends.length?`<div class="label" style="margin-top:8px">Friends</div>${friends.map(f=>row(f,act(f)+`<button class="fr-x" data-rm="${f.id}" aria-label="Remove friend">✕</button>`)).join('')}`
+        :`<p class="fr-empty">No friends yet. Add someone by their screen name or player ID (it's under their name in Profile).</p>`}
+      ${sent.length?`<div class="label" style="margin-top:8px">Sent</div>${sent.map(f=>row(f,`<button class="fr-x" data-rm="${f.id}" aria-label="Cancel request">✕</button>`)).join('')}`:''}
+      <div class="fr-add"><input id="fr-input" type="text" maxlength="24" placeholder="Screen name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="fr-add">Add</button></div>`;
+  const keep=$('#fr-input')&&$('#fr-input').value;
+  openSheet(`<div id="fr-sheet"><h3>Friends${online?` <span class="badge-on">${online} online</span>`:''}</h3>${body}<button class="btn btn-ghost" id="fr-close" style="margin-top:12px">Close</button></div>`);
+  if(keep&&$('#fr-input')) $('#fr-input').value=keep;
+  $('#fr-close').onclick=()=>{ closeSheet(); if((typeof NET!=='undefined')&&NET.ready) NET.send({t:'friends',open:false}); };
+  const add=$('#fr-add'); if(add){ const go=()=>{ const v=$('#fr-input').value.trim(); if(!v) return $('#fr-input').focus(); NET.send({t:'friendAdd',q:v}); $('#fr-input').value=''; };
+    add.onclick=go; $('#fr-input').onkeydown=e=>{ if(e.key==='Enter') go(); }; }
+  document.querySelectorAll('#fr-sheet [data-acc]').forEach(b=>b.onclick=()=>NET.send({t:'friendAccept',id:b.dataset.acc}));
+  document.querySelectorAll('#fr-sheet [data-rm]').forEach(b=>twoTap(b,'✓?',()=>NET.send({t:'friendRemove',id:b.dataset.rm})));
+  document.querySelectorAll('#fr-sheet [data-inv]').forEach(b=>b.onclick=()=>{ NET.send({t:'invite',id:b.dataset.inv}); b.disabled=true; b.textContent='Sent'; });
+  document.querySelectorAll('#fr-sheet [data-join]').forEach(b=>b.onclick=()=>{ closeSheet(); NET.send({t:'friends',open:false}); NET.send({t:'join',id:b.dataset.join}); });
+}
+/* An invite from another player: Join takes you to their table (leaving yours if you're at one) */
+function showInvite(m){
+  const el=document.createElement('div'); el.className='invite-pop'; el.setAttribute('role','alertdialog');
+  el.innerHTML=`<small>Invite</small><b></b><span></span><div class="row"><button class="btn btn-ghost" data-no>No thanks</button><button class="btn btn-brass" data-yes>Join</button></div>`;
+  el.querySelector('b').textContent=`${m.from} invited you to play`;
+  el.querySelector('span').textContent=m.tableName+(m.inProgress?' · game in progress (you’ll be dealt in next game)':'');
+  document.body.appendChild(el);
+  const done=()=>{ clearTimeout(el._t); el.remove(); };
+  el.querySelector('[data-no]').onclick=done;
+  el.querySelector('[data-yes]').onclick=()=>{ done(); NET.send({t:'acceptInvite',tableId:m.tableId}); };
+  el._t=setTimeout(done,m.expires||60000);
 }
 /* Sort: first tap sorts by mode (CPU tables first, then Endless, Target, Casual), next tap reverses it */
 $('#lb-sort-btn').onclick=()=>{if(LB.sort!=='mode'){LB.sort='mode';LB.modeDir='desc'}else LB.modeDir=LB.modeDir==='desc'?'asc':'desc';renderLobby()};
@@ -2083,12 +2139,12 @@ function ghostTap(){
 }
 function openInvite(){
   openSheet(`<h3>Invite a friend</h3>
-    <input id="inv-name" type="text" maxlength="16" placeholder="Screen name" autocomplete="off" autocapitalize="off" spellcheck="false" class="inv-input">
+    <input id="inv-name" type="text" maxlength="24" placeholder="Screen name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false" class="inv-input">
     <button class="btn btn-brass" id="inv-send">Invite</button>`);
   const i=$('#inv-name'); setTimeout(()=>i.focus(),30);
   const send=()=>{ const nm=i.value.trim(); if(!nm) return i.focus();
-    // the server side of invites comes with the friends list; nothing is sent yet
-    closeSheet(); toast(`Invite to ${nm} noted. Invites start working once the friends list is added.`,'info'); };
+    if((typeof NET==='undefined')||!NET.ready) return toast('Connect to the server to invite players.');
+    NET.send({t:'invite',q:nm}); closeSheet(); };
   $('#inv-send').onclick=send; i.onkeydown=ev=>{ if(ev.key==='Enter') send(); };
 }
 function renderNewTable(){
@@ -2237,7 +2293,7 @@ function saveHistory(r){
   const rec={at:Date.now(),players:M.players.map(p=>({name:p.name,color:p.color,level:p.level||null})),match:M.match,target:M.target,
     start:G.startHand,log:G.log,deck:G.deck,commit:G.commit,result:{type:r.type,winner:r.winner??null,loser:r.loser??null,counts:r.counts,delta:r.delta,head:r.head,net:M.players.map((_,i)=>net(i))}};
   pushHistory(rec);
-  if(window.CLOUD) CLOUD.saveOffline(rec);
+  if(typeof CLOUD!=='undefined') CLOUD.saveOffline(rec);
 }
 /* History keeps the 100 most recent games, plus every favorited game (starred games never age out). */
 const HIST_RECENT=100, HIST_FAVS=999;
@@ -2275,7 +2331,7 @@ function showHistory(){
     <div class="hist-filter"><button data-f="new" aria-pressed="${histFilter==='new'}">Newest</button><button data-f="fav" aria-pressed="${histFilter==='fav'}">★ Favorites</button></div>
     <div class="hist-list">${items}</div><button class="btn btn-ghost" id="h-close">Close</button>`);
   const scroller=$('#overlay .sheet'); if(showHistory.keepScroll!=null){ scroller.scrollTop=showHistory.keepScroll; showHistory.keepScroll=null; }
-  const update=(h,fn)=>{ const cur=store.get(HKEY,[]); const x=cur.find(y=>(y.id||'')===h.id||y.at===h.at); if(x){ fn(x); fn(h); saveHistoryList(cur); if(window.CLOUD) CLOUD.saveMark(x); } };
+  const update=(h,fn)=>{ const cur=store.get(HKEY,[]); const x=cur.find(y=>(y.id||'')===h.id||y.at===h.at); if(x){ fn(x); fn(h); saveHistoryList(cur); if(typeof CLOUD!=='undefined') CLOUD.saveMark(x); } };
   $('#h-close').onclick=closeSheet;
   document.querySelectorAll('.hist-filter button').forEach(b=>b.onclick=()=>{histFilter=b.dataset.f; showHistory();});
   document.querySelectorAll('.hist-item').forEach(b=>b.onclick=()=>showGame(list[+b.dataset.k]));
@@ -2406,6 +2462,9 @@ function onServer(m){
   switch(m.t){
     case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; if(m.pid) setPlayerId(m.pid); $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
     case 'admin': renderAdmin(m); break;
+    case 'friends': FRIENDS=m.list||[]; friendsOnline(); if(document.getElementById('fr-sheet')&&!$('#overlay').hidden) drawFriends(); break;
+    case 'friendsCount': friendsCount(m.online||0,m.requests||0); break;
+    case 'invited': showInvite(m); break;
     case 'online': ['#lobby-online'].forEach(id=>{ const el=$(id); el.innerHTML=`<span class="dot-live"></span>${m.n} player${m.n===1?'':'s'} online`; el.hidden=false; }); break;
     case 'announce': announce(m.text); break;
     case 'error': toast(m.msg); break;
@@ -2854,7 +2913,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261107-165710) */
+/* Offline support + automatic updates (build 20261107-201353) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
