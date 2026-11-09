@@ -2011,11 +2011,31 @@ function loadStats(){
 function saveStats(s,fromCloud){ if(session.guest) guestStats=s; else { if(!fromCloud) s.updatedAt=Date.now(); store.set('thirteen.stats',s); if(!fromCloud&&typeof CLOUD!=='undefined') CLOUD.pushStats(); } }
 /* result: 'w' you went out first, 't' you also emptied your hand during the final lap, 'l' anything else */
 function recordStat(result){
-  const opp=M.players.slice(1).filter(p=>!p.waiting); if(!opp.length) return;
+  const opp=M.players.slice(1).filter(p=>!p.waiting&&!p.ghost); if(!opp.length) return;   // open (+) and reserved seats don't count
   const bucket=opp.every(p=>p.cpu)?'cpu':opp.every(p=>!p.cpu)?'human':null;
   if(!bucket) return;
   const s=loadStats(), row=s[bucket][opp.length+1]; if(!row) return;
   row.p++; if(result==='w') row.w++; if(result==='t') row.t=(row.t||0)+1; saveStats(s);
+}
+/* One-time repair: online games that started short-handed were counted with their open seats
+   (a 2-player game at a 4-seat table counted as 4-player). Moves those games to the right bucket. */
+function fixGhostStats(){
+  if(session.guest) return;
+  const s=store.get('thirteen.stats',null); if(!s||!s.cpu||s.fixOpenSeats) return;
+  const res=h=>{ const r=h.result; return r.type==='win'&&r.winner===0?'w':r.type==='win'&&r.counts[0]===0?'t':'l'; };
+  const sub=(row,x)=>{ if(!row||row.p<1) return; row.p--; if(x==='w'&&row.w>0) row.w--; if(x==='t'&&row.t>0) row.t--; };
+  const add=(row,x)=>{ if(!row) return; row.p++; if(x==='w') row.w++; if(x==='t') row.t=(row.t||0)+1; };
+  let moved=0;
+  store.get(HKEY,[]).forEach(h=>{
+    if(!h.players||!h.players.some(p=>p.name==='')) return;
+    const real=h.players.slice(1).filter(p=>p.name!==''), wrongN=h.players.length, rightN=real.length+1, x=res(h);
+    const allHuman=real.length&&real.every(p=>!p.level), allCpu=real.length&&real.every(p=>p.level);
+    if(allHuman) sub(s.human[wrongN],x);            // was counted as a bigger human game
+    if(allHuman) add(s.human[rightN],x); else if(allCpu) add(s.cpu[rightN],x);   // CPU-table games had been skipped
+    moved++;
+  });
+  s.fixOpenSeats=true; saveStats(s);
+  if(moved) console.log('stats repaired:',moved,'game(s)');
 }
 function statRows(b,emptyMsg){
   const rows=[2,3,4].map(n=>({n,t:0,...b[n]})), tot=rows.reduce((a,r)=>({p:a.p+r.p,w:a.w+r.w,t:a.t+(r.t||0)}),{p:0,w:0,t:0});
@@ -2424,7 +2444,7 @@ function showHistory(){
   const items=list.length?list.map((h,k)=>{const d=h.result.delta[0];
     return `<div class="hist-item" role="button" tabindex="0" data-k="${k}">
       <button class="hi-star" data-star="${k}" aria-pressed="${!!h.fav}" aria-label="${h.fav?'Remove from favorites':'Add to favorites'}">${STAR_SVG}</button>
-      <div class="hi-main"><b>${esc(h.result.head)}</b><span>${when(h.at)} · ${h.players.length} players · ${h.match}</span></div>
+      <div class="hi-main"><b>${esc(h.result.head)}</b><span>${when(h.at)} · ${h.players.filter(p=>p.name!=='').length} players · ${h.match}</span></div>
       <em class="${d>0?'pos':d<0?'neg':''}">${signed(d)||'0'}</em>
       ${h.fav?`<button class="hi-note${h.note?' has':''}" data-note="${k}" aria-label="${h.note?'Edit note':'Add a note'}">${NOTE_SVG}</button>`:''}</div>`}).join('')
     :histFilter==='fav'?'<p>No favorites yet. Tap the star on a game to keep it here.</p>':'<p>No games yet. Finished games appear here so you can review them later.</p>';
@@ -2511,7 +2531,7 @@ function buildPDF(h){
     doc.setTextColor(25,25,25)};
   doc.setFont('times','bold'); doc.setFontSize(24); doc.text('Thirteen · Hand history',X,y); y+=22;
   doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(110,110,110);
-  doc.text(`${new Date(h.at).toLocaleString()}  ·  ${h.players.length} players  ·  ${h.match}${h.match==='target'?' to '+h.target:''}  ·  Suits: S spades, H hearts, D diamonds, C clubs`,X,y); y+=26;
+  doc.text(`${new Date(h.at).toLocaleString()}  ·  ${h.players.filter(p=>p.name!=='').length} players  ·  ${h.match}${h.match==='target'?' to '+h.target:''}  ·  Suits: S spades, H hearts, D diamonds, C clubs`,X,y); y+=26;
   doc.setTextColor(25,25,25); doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(T(h.result.head),X,y); y+=22;
   doc.setFontSize(11); doc.text('Your starting hand',X,y); y+=16; doc.setFont('helvetica','normal'); cardsText(h.start,X); y+=24;
   if(h.commit){doc.setFontSize(9); doc.setTextColor(110,110,110); doc.text('Deal ID (SHA-256): '+h.commit.hash,X,y); y+=18; doc.setTextColor(25,25,25); doc.setFontSize(11)}
@@ -2710,7 +2730,7 @@ function recordNetGame(v){
   const n=v.seats.length, rot=j=>(j-v.you+n)%n, me=v.you;
   recordStat(r.type==='win'&&r.winner===me?'w':r.type==='win'&&r.counts[me]===0?'t':'l');
   try{
-    const players=M.players.filter(p=>!p.waiting).map(p=>({name:p.name,color:p.color,level:p.level||null}));
+    const players=M.players.filter(p=>!p.waiting&&!p.ghost).map(p=>({name:p.name,color:p.color,level:p.level||null}));
     const start=r.proof.deck.slice(me*13,me*13+13).sort((a,b)=>a-b);
     const log=(v.log||[]).map(e=>({...e,p:rot(e.p)}));
     const counts=v.seats.map((_,k)=>r.counts[(k+me)%n]);
@@ -2844,7 +2864,7 @@ const CLOUD={
   stop(){ this.uid=null; },
   async syncAll(){
     if(!this.on()||this.busy) return; this.busy=true;
-    try{ await this.syncStats(); await this.syncHistory(); await this.pullTallies(); }
+    try{ await this.syncStats(); await this.syncHistory(); fixGhostStats(); await this.pullTallies(); }
     finally{ this.busy=false; }
   },
   // ---- stats: whichever copy is newer wins (the phone's first upload seeds the account) ----
@@ -2946,6 +2966,7 @@ $('#pf-copy').onclick=async()=>{
   toast(ok?'Player ID copied.':'Couldn\'t copy. Press and hold the ID to copy it.','info');
 };
 function enterOnline(sess,guest){
+  setTimeout(fixGhostStats,0);
   NET.token=sess?sess.access_token:null;
   startSession(!!guest);
   if(sess&&!guest){ const meta=sess.user.user_metadata||{}; if(!store.get('thirteen.profile',null)||!account.named){ const nm=(meta.display_name||meta.full_name||meta.name||'').replace(/[^A-Za-z0-9 _.-]/g,'').slice(0,16); if(nm.length>=3){ account.name=nm; } account.named=true; store.set('thirteen.profile',account); } }
@@ -3014,7 +3035,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-170244) */
+/* Offline support + automatic updates (build 20261108-190320) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
