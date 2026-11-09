@@ -113,9 +113,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .seg button{flex:1; min-height:40px; border-radius:8px; font-family:var(--cond); font-weight:600; font-size:16px; letter-spacing:.04em; color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--panel-2); color:var(--cream); box-shadow:inset 0 0 0 1px var(--brass)}
 .seg button:disabled{opacity:.4; cursor:default}
-.cpu-row{display:grid; grid-template-columns:auto 1fr; align-items:center; gap:12px}
+.cpu-row{display:grid; grid-template-columns:1fr; align-items:center; gap:6px}
 .cpu-row .seg{min-width:0}
-.cpu-row .seg button{flex:1 1 auto; min-width:0; padding:0 3px; font-size:14px; letter-spacing:0}
+.cpu-row .seg button{flex:1 1 auto; min-width:0; padding:0 4px; font-size:13.5px; letter-spacing:0}
 .cpu-name{display:flex; align-items:center; gap:8px; min-width:84px; font-weight:600}
 .dot{width:10px; height:10px; border-radius:50%; flex:none}
 .target-row{display:flex; align-items:center; gap:12px}
@@ -385,6 +385,40 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 #nt-dc button{font-size:14px}
 #lobby,#newtable,#waiting{padding-block:18px; gap:14px}
 #newtable{overflow-y:auto}
+#waiting{overflow-y:auto}
+.adm-only{border-color:rgba(239,75,75,.55); background:rgba(239,75,75,.06)}
+.adm-only .label,.adm-only .toggle-row span,.adm-only .hint,.adm-only output{color:var(--danger)!important}
+.adm-only .toggle-row small{color:rgba(239,75,75,.75)!important}
+.adm-only .seg button[aria-pressed=true]{background:var(--danger); color:#fff}
+.adm-only input[type=range]{accent-color:var(--danger)}
+.t-opts{display:flex; flex-direction:column; gap:10px}
+.ladder-btn{margin-right:0}
+.pill.tour{border-color:var(--danger); color:var(--danger)}
+#bracket{position:fixed; inset:0; z-index:70; background:rgba(5,8,6,.86); display:flex; align-items:center; justify-content:center; padding:max(14px,env(safe-area-inset-top)) 12px max(14px,env(safe-area-inset-bottom))}
+#bracket[hidden]{display:none}
+.br-box{width:min(760px,100%); max-height:100%; display:flex; flex-direction:column; gap:10px; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.br-head{display:flex; align-items:flex-start; gap:10px}
+.br-head h3{font-family:var(--display); font-weight:400; font-size:24px; margin:0; line-height:1.1; flex:1}
+.br-head small{display:block; font-family:var(--body,system-ui); font-size:13px; color:var(--muted); margin-top:3px}
+.br-champ{background:rgba(232,194,106,.12); border:1px solid var(--brass); color:var(--brass); border-radius:10px; padding:8px 12px; font-weight:600; text-align:center}
+.br-scroll{overflow:auto; -webkit-overflow-scrolling:touch; min-height:0; flex:1}
+.br-cols{display:flex; gap:14px; min-width:min-content; padding-bottom:4px}
+.br-col{display:flex; flex-direction:column; flex:1 0 148px; max-width:220px; min-width:0}
+.br-col>.label{text-align:center; margin-bottom:8px}
+.br-ms{display:flex; flex-direction:column; justify-content:space-around; flex:1; gap:10px}
+.bm{background:#0b0f0c; border:1px solid var(--line); border-radius:9px; overflow:hidden}
+.bm.live{border-color:var(--ok); box-shadow:0 0 0 1px var(--ok) inset}
+.bp{display:flex; align-items:center; gap:8px; padding:6px 9px; font-size:14px; min-height:30px}
+.bp+.bp{border-top:1px solid var(--line)}
+.bp span{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bp b{font-family:var(--cond); font-variant-numeric:tabular-nums; min-width:16px; text-align:right}
+.bp.win{font-weight:700} .bp.win b{color:var(--brass)}
+.bp.lose{color:var(--muted)} .bp.lose span{text-decoration:line-through; text-decoration-color:rgba(255,255,255,.25)}
+.bp.tbd{color:var(--muted); font-style:italic}
+.bp.you span{color:var(--brass)}
+.bm-live{font-family:var(--cond); font-size:10px; letter-spacing:.12em; color:var(--ok); padding:2px 9px 4px}
+.sum-top{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.t-score{font-family:var(--cond); font-size:15px; letter-spacing:.04em; color:var(--cream); text-align:center}
 .seat-list{display:flex; flex-direction:column; gap:8px}
 .seat-row{display:flex; align-items:center; gap:10px; min-height:48px; padding:0 12px; border-radius:10px; background:var(--panel-2); border:1px solid var(--line)}
 .seat-row.empty{background:none; border-style:dashed; color:var(--muted)}
@@ -688,7 +722,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   <div class="panel">
     <div class="label">CPU tables</div>
     <div class="set-row"><span>Tables open</span><div class="seg" id="adm-cpu-sizes" data-multi="1"><button data-v="2">1/2</button><button data-v="3">2/3</button><button data-v="4">3/4</button></div></div>
-    <div class="set-row"><span>CPU levels</span><span><select id="adm-cpu-lo"><option value="1">Beginner</option><option value="2">Solid</option><option value="3">Strong</option><option value="4">Expert</option></select> to <select id="adm-cpu-hi"><option value="1">Beginner</option><option value="2">Solid</option><option value="3">Strong</option><option value="4">Expert</option></select></span></div>
+    <div class="set-row"><span>CPU levels</span><span><select id="adm-cpu-lo"><option value="1">Beginner</option><option value="2">Solid</option><option value="3">Strong</option><option value="4">Expert</option><option value="5">Master</option></select> to <select id="adm-cpu-hi"><option value="1">Beginner</option><option value="2">Solid</option><option value="3">Strong</option><option value="4">Expert</option><option value="5">Master</option></select></span></div>
     <div class="set-row"><span>Scoring</span><div class="seg" id="adm-cpu-match"><button data-v="endless">Endless</button><button data-v="target">Target</button><button data-v="casual">Casual</button></div></div>
     <button class="btn btn-ghost" id="adm-cpu-save">Save CPU tables</button>
   </div>
@@ -851,6 +885,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
       <p class="form-err" id="nt-perr" hidden></p>
     </div>
   </div>
+  <div class="panel adm-only" id="nt-admin" hidden>
+    <div class="label">Admin only</div>
+    <div class="toggle-row" style="background:none;border:0;padding:0">
+      <span>Tournament<small>1v1 single elimination bracket. Win enough games against your opponent to knock them out and advance.</small></span>
+      <button class="switch" id="nt-tourney" role="switch" aria-checked="false" aria-label="Tournament mode"></button>
+    </div>
+    <div class="t-opts" id="nt-t-opts" hidden>
+      <div class="label">Players</div>
+      <div class="seg" id="nt-tsize"><button data-v="4">4 players</button><button data-v="8">8 players</button><button data-v="16">16 players</button></div>
+      <div class="label">Wins to advance</div>
+      <div class="target-row"><input type="range" id="nt-twins" min="1" max="10" step="1" aria-label="Game wins needed to advance"><output id="nt-twins-out">2</output></div>
+      <p class="hint" id="nt-twins-hint"></p>
+    </div>
+  </div>
   <button class="btn btn-brass" id="btn-opentable">Create lobby</button>
 </section>
 
@@ -859,6 +907,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   <div class="topline">
     <button class="icon-btn" id="wr-leave" aria-label="Leave table">‹</button>
     <h2 id="wr-title">Table</h2>
+    <button class="friends-btn ladder-btn" id="wr-bracket" hidden aria-label="Show the bracket"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M7.5 3v18M16.5 3v18M7.5 7h9M7.5 12h9M7.5 17h9"/></svg></button>
     <button class="friends-btn" id="wr-friends" aria-label="Friends"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.6.2 4.4 1.8 5 4.8"/></svg><b class="fr-n" hidden>0</b></button>
   </div>
   <div class="panel" id="wr-rules"></div>
@@ -886,7 +935,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
       <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
     </div>
     <div id="cpu-levels" style="display:flex;flex-direction:column;gap:10px"></div>
-    <p class="hint">1 Beginner · 2 Solid, some mistakes · 3 Strong · 4 Expert, rarely makes mistakes. CPU names are drawn at random to suit their level.</p>
+    <p class="hint">1 Beginner · 2 Solid, some mistakes · 3 Strong · 4 Expert, rarely makes mistakes · 5 Master, adapts to you and makes no mistakes. CPU names are drawn at random to suit their level.</p>
   </div>
   <div class="panel">
     <div class="label">Scoring</div>
@@ -934,6 +983,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   </div>
 </section>
 
+<div id="bracket" hidden role="dialog" aria-modal="true" aria-label="Tournament bracket"></div>
 <div id="overlay" class="overlay" hidden></div>
 <div id="toast" class="toast" hidden></div>
 
@@ -1082,11 +1132,13 @@ const NAMES={
      fn:['Rowena','Isolde','Gwendolyn','Matilda','Elowen','Beatrix','Wilhelmina','Guinevere','Eleanor','Margery','Sybil','Aveline','Edith','Rosamund']},
   4:{m:['Marquess','Duke','Archduke','Grand Duke','Prince','Czar'], f:['Marchioness','Duchess','Archduchess','Grand Duchess','Princess','Tsarina'], n:['Warlord','Khan','Overlord','Sovereign'],
      mn:['Vladislav','Maximilian','Lucan','Konstantin','Alaric','Casimir','Ragnar','Dragomir','Leopold','Sigismund','Temujin','Draven','Bogdan'],
-     fn:['Octavia','Seraphina','Valentina','Theodora','Ysolde','Anastasia','Evangeline','Morgana','Ottoline','Ludovica','Katarina','Isadora']}
+     fn:['Octavia','Seraphina','Valentina','Theodora','Ysolde','Anastasia','Evangeline','Morgana','Ottoline','Ludovica','Katarina','Isadora']},
+  5:{list:['Sun Tzu','Machiavelli','Light Yagami','Eraldo Coil','Stu Ungar']}   // Master: these names only
 };
 const pickOf=a=>a[rngInt(a.length)];
 function cpuName(level,used){
   const N=NAMES[level]||NAMES[2];
+  if(N.list){ const free=N.list.filter(n=>!used.includes(n)); return free.length?pickOf(free):pickOf(N.list); }
   for(let k=0;k<40;k++){
     let nm;
     if(level<=2) nm=`${pickOf(N.a)} ${pickOf(N.b)}`;
@@ -1179,7 +1231,7 @@ function renderSetup(){
   for(let i=0;i<setup.cpus;i++){
     const row=document.createElement('div'); row.className='cpu-row';
     row.innerHTML=`<div class="cpu-name"><span class="dot" style="background:${COLORS[i+1]}"></span>CPU ${i+1}</div>
-      <div class="seg">${[1,2,3,4].map(l=>`<button data-l="${l}" aria-pressed="${setup.levels[i]===l}">${['','Beginner','Solid','Strong','Expert'][l]}</button>`).join('')}</div>`;
+      <div class="seg">${[1,2,3,4,5].map(l=>`<button data-l="${l}" aria-pressed="${setup.levels[i]===l}">${['','Beginner','Solid','Strong','Expert','Master'][l]}</button>`).join('')}</div>`;
     row.querySelectorAll('button').forEach(b=>b.onclick=()=>{setup.levels[i]=+b.dataset.l;store.set('thirteen.setup',setup);renderSetup()});
     box.appendChild(row);
   }
@@ -1440,6 +1492,7 @@ function cpuDecide(i){
     return plays.sort((a,b)=>b.cards.length-a.cards.length||power(a)-power(b))[0];
   }
   if(lvl===4) return expertDecide(i,plays,hand,T);
+  if(lvl>=5) return masterDecide(i,plays,hand,T);
   const counts={}; hand.forEach(c=>counts[c.r]=(counts[c.r]||0)+1);
   const breaks=x=>{if(x.kind===5)return 0;return counts[x.cards[0].r]>x.cards.length?1:0};
   const avg=x=>x.cards.reduce((a,c)=>a+c.r,0)/x.cards.length;
@@ -1541,6 +1594,148 @@ function expertDecide(i,plays,hand,T){
   if(steps(after(best))<=1&&isBoss(best,unk)) return best; // wins the lead and leaves one play to go out
   if(cost(best)>=8&&hand.length>4) return null;          // would wreck the plan: pass instead
   return best;
+}
+
+/* ===== Level 5: Master =====
+   Still plays only on what a real player could know — its own hand and everything played in the open — but uses all of it:
+   • counts every opponent's cards (13 dealt, minus what they've played),
+   • remembers every pass, so it learns which kinds of play each opponent can't beat and adapts to them,
+   • plans its whole hand and runs out once it holds enough plays nobody can answer,
+   • never makes random mistakes. */
+function masterRead(i,hand){
+  const seen=seenCards(), mine=new Set(hand.map(c=>c.id));
+  const unk=[];for(let id=0;id<52;id++) if(!seen.has(id)&&!mine.has(id)) unk.push(mk(id>>2,id&3));
+  const cnt=M.players.map(()=>13), weak=M.players.map(()=>[]);
+  let table=null;
+  G.log.forEach(e=>{
+    if(e.t==='play'||e.t==='open'){ cnt[e.p]-=e.c.length; table=classify(e.c.map(id=>mk(id>>2,id&3))); }
+    else if(e.t==='round') table=null;
+    else if(e.t==='pass'&&table) weak[e.p].push(table);   // they passed on this: they likely can't beat it
+  });
+  const live=M.players.map((_,j)=>j!==i&&cnt[j]>0&&!(G.finalLap&&G.hands[j]&&G.hands[j].length===0));
+  return {unk,cnt,weak,live};
+}
+/* Endgame search: try each sensible move against many random deals of the unseen cards (matching each opponent's card count),
+   play the rest of the hand out quickly, and pick the move that goes out first most often. */
+function masterRollout(n,hands,cur,table,lastPlayer,passes,me){
+  const h=hands.map(x=>x.slice());
+  for(let steps=0;steps<200;steps++){
+    const hand=h[cur]; let play=null;
+    if(hand.length){
+      let ps=allPlays(hand); if(table) ps=ps.filter(x=>beats(x,table));
+      ps=ps.filter(x=>{const rest=hand.filter(c=>!x.cards.includes(c));return !(rest.length===1&&rest[0].id===SPADE2)});
+      if(ps.length){
+        play=ps.find(x=>x.cards.length===hand.length);
+        if(!play){
+          if(!table){ const g=partition(hand).sort((a,b)=>a.cards.reduce((t,c)=>t+c.id,0)/a.cards.length-b.cards.reduce((t,c)=>t+c.id,0)/b.cards.length)[0]; play=ps.find(x=>x.cards.length===g.cards.length&&x.cards.every(c=>g.cards.includes(c)))||ps.sort((a,b)=>power(a)-power(b))[0]; }
+          else { ps.sort((a,b)=>power(a)-power(b)); play=ps[0]; if(hand.length>3&&play.cards.some(c=>c.r>=11)&&Math.random()<.5) play=null; }
+        }
+      }
+    }
+    if(play){
+      const ids=new Set(play.cards.map(c=>c.id)); h[cur]=hand.filter(c=>!ids.has(c.id));
+      if(!h[cur].length) return cur===me?1:-0.2-h[me].length/26;
+      if(h[cur].length===1&&h[cur][0].id===SPADE2) return cur===me?-1:0.2;
+      table=play; lastPlayer=cur; passes=0;
+    } else if(table){ passes++; if(passes>=n-1){ table=null; passes=0; cur=lastPlayer; continue; } }
+    cur=(cur+1)%n;
+  }
+  return 0;
+}
+function masterSearch(i,cands,hand,T,R,samples){
+  const n=M.n||M.players.length, opp=[...Array(n).keys()].filter(j=>j!==i);
+  const score=new Map(cands.map(c=>[c,0]));
+  const stop=Date.now()+200;   // a time limit, so a Master never makes anyone wait (or holds up the server)
+  for(let s=0;s<samples;s++){
+    if(s>=2&&Date.now()>stop) break;
+    const pool=R.unk.slice(); for(let k=pool.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[pool[k],pool[r]]=[pool[r],pool[k]]}
+    const hands=[]; let at=0;
+    for(let j=0;j<n;j++){ if(j===i){hands.push(hand);continue} const c=Math.max(0,R.cnt[j]); hands.push(pool.slice(at,at+c)); at+=c; }
+    cands.forEach(c=>{
+      let v;
+      if(c==='pass'){
+        const passes=(G.passes||0)+1;
+        if(passes>=n-1) v=masterRollout(n,hands,G.lastPlayer,null,G.lastPlayer,0,i);
+        else v=masterRollout(n,hands,(i+1)%n,T,G.lastPlayer,passes,i);
+      } else {
+        const hs=hands.slice(), ids=new Set(c.cards.map(x=>x.id)); hs[i]=hand.filter(x=>!ids.has(x.id));
+        if(!hs[i].length) v=1; else v=masterRollout(n,hs,(i+1)%n,c,i,0,i);
+      }
+      score.set(c,score.get(c)+v);
+    });
+  }
+  return [...score.entries()].sort((a,b)=>b[1]-a[1])[0][0];
+}
+function masterDecide(i,plays,hand,T){
+  const R=masterRead(i,hand), {unk,cnt,weak,live}=R;
+  const endgame=hand.length<=9||Math.min(...[...Array(M.n||M.players.length).keys()].filter(j=>j!==i&&R.live[j]).map(j=>cnt[j]),99)<=5;
+  if(endgame&&!G.finalLap){
+    const pre=expertDecide(i,plays,hand,T)||plays[0];
+    const cands=[...new Set([pre,...[...plays].sort((a,b)=>power(a)-power(b)).slice(0,8),...plays.filter(p=>p.cards.length>=2).slice(0,4)])].filter(Boolean);
+    if(T) cands.push('pass');
+    if(cands.length>1){ const pick=masterSearch(i,cands,hand,T,R,hand.length<=5?48:32); return pick==='pass'?null:pick; }
+    return pre;
+  }
+  return expertDecide(i,plays,hand,T);
+}
+function masterHeuristic(i,plays,hand,T,R){
+  const {unk,cnt,weak,live}=R;
+  const opp=M.players.map((_,j)=>j).filter(j=>live[j]);
+  const after=p=>hand.filter(c=>!p.cards.includes(c));
+  const plan=h=>h.length?partition(h):[];
+  const steps=h=>plan(h).length;
+  const same=(a,b)=>a.cards.length===b.cards.length&&(a.kind!==5||b.kind===5);
+  // can opponent j answer play p? Not if they have too few cards, or they already passed on an equal-or-weaker play of that kind
+  const canAnswer=(j,p)=>{
+    if(cnt[j]<p.cards.length) return false;
+    if(weak[j].some(w=>same(w,p)&&power(w)<=power(p))) return false;
+    return true;
+  };
+  const boss=p=>isBoss(p,unk)||opp.every(j=>!canAnswer(j,p));
+  const legal=g=>plays.find(p=>p.cards.length===g.cards.length&&p.cards.every(c=>g.cards.includes(c)));
+  const danger=Math.min(...opp.map(j=>cnt[j]),99);   // the fewest cards any opponent holds
+  const lowSingleRisk=p=>p.kind===1&&!boss(p)&&opp.some(j=>cnt[j]===1);
+  const runOut=h=>{ const pl=plan(h); return pl.length<=1||pl.filter(boss).length>=pl.length-1; };
+  if(!T){
+    const pl=plan(hand);
+    if(runOut(hand)){   // enough unanswerable plays: lead them, keep the last group to finish
+      const b=pl.filter(boss).sort((a,b2)=>b2.cards.length-a.cards.length);
+      const g=pl.length===1?pl[0]:b.find(x=>legal(x))||pl.find(x=>legal(x));
+      if(g&&legal(g)) return legal(g);
+    }
+    const score=p=>{
+      let s=steps(after(p))*10+(p.cards.reduce((a,c)=>a+c.r,0)/p.cards.length)*0.7-p.cards.length*0.9;
+      if(runOut(after(p))) s-=40;                      // sets up a guaranteed finish
+      if(lowSingleRisk(p)) s+=30;                      // never feed a 1-card opponent a single they can beat
+      if(opp.some(j=>cnt[j]===2)&&p.kind===2&&!boss(p)) s+=12;
+      if(p.cards.length>danger) s-=4;                  // plays bigger than their hand can't be answered
+      if(opp.length&&opp.every(j=>!canAnswer(j,p))) s-=3;   // adapts: lead what they've shown they can't beat
+      if(isBoss(p,unk)&&pl.length>3) s+=7;             // keep control cards for the end
+      return s;
+    };
+    return [...plays].sort((a,b)=>score(a)-score(b))[0];
+  }
+  // responding to a play on the table
+  const base=steps(hand);
+  const finisher=plays.find(p=>boss(p)&&runOut(after(p)));
+  if(finisher) return finisher;                        // take the lead and run out
+  const urgent=danger<=2;   // an opponent could go out on their next lead
+  const cost=p=>{
+    const extra=steps(after(p))-(base-1);
+    let c=extra*8+power(p)/(p.kind===5?600000:52)*6;
+    if(isBoss(p,unk)&&base>3&&!urgent) c+=5;
+    return c;
+  };
+  const sorted=[...plays].sort((a,b)=>cost(a)-cost(b));
+  if(urgent||opp.some(j=>cnt[j]===1)){
+    // someone is about to go out: win this lead if at all possible, with the play that keeps the most control after
+    const winning=sorted.filter(boss); if(winning.length) return winning[0];
+    return T.kind===1?[...plays].sort((a,b)=>power(b)-power(a))[0]:sorted[0];
+  }
+  const best=sorted[0];
+  if(cost(best)>=8&&hand.length>4) return null;        // would wreck the plan: pass
+  if(boss(best)||hand.length<=6) return best;
+  return cost(best)>=5&&base>4?null:best;
 }
 
 /* ================= Rendering ================= */
@@ -1723,7 +1918,7 @@ function renderChips(){
   if(!$('#score-pop').hidden) renderScorePop();
 }
 function renderScorePop(){
-  $('#sp-mode').textContent=M.match==='target'?`Scoreboard · first to ${M.target}`:M.match==='casual'?'Scoreboard · casual, this game only':'Scoreboard · endless';
+  $('#sp-mode').textContent=M.match==='tourney'?'Scoreboard · tournament match':M.match==='target'?`Scoreboard · first to ${M.target}`:M.match==='casual'?'Scoreboard · casual, this game only':'Scoreboard · endless';
   $('#sp-rows').innerHTML=M.players.map((p,i)=>({p,i,v:net(i)})).sort((a,b)=>b.v-a.v).map(({p,i,v})=>
     `<div class="sp-row"><span class="dot" style="background:${p.color}"></span><span class="nm">${i===0?'You':esc(p.name)}</span><b class="${v>0?'pos':v<0?'neg':''}">${signed(v)||'0'}</b></div>`).join('');
 }
@@ -1895,7 +2090,7 @@ function breakdownHTML(){
 function showBreakdown(){
   if(!M) return;
   const cards=breakdownHTML();
-  const mode={endless:'Endless tally',target:`Target: first to ${M.target}`,casual:'Casual: this game only'}[M.match];
+  const mode={endless:'Endless tally',target:`Target: first to ${M.target}`,casual:'Casual: this game only',tourney:'Tournament match'}[M.match];
   openSheet(`<div class="label">${mode}</div><h3>Scoreboard</h3><p>Each line is a running balance with that opponent. Positive means they owe you.</p><div class="breakdown">${cards}</div><button class="btn btn-ghost" id="sb-close">Close</button>`);
   $('#sb-close').onclick=closeSheet;
 };
@@ -2057,7 +2252,7 @@ let guestPlayers=null;
 function loadPlayers(){ return session.guest?(guestPlayers||(guestPlayers={tally:{},seen:[]})):store.get(PKEY,{tally:{},seen:[]}); }
 function savePlayers(d){ if(session.guest) guestPlayers=d; else store.set(PKEY,d); }
 function recordPlayerTally(t){
-  const s=t.summary, me=t.you; if(!s||!s.pays||me<0||t.rules.match==='casual') return;
+  const s=t.summary, me=t.you; if(!s||!s.pays||!s.result||me<0||t.rules.match==='casual'||t.rules.match==='tourney') return;
   const d=loadPlayers(), key=s.result.proof.hash; if(d.seen.includes(key)) return;
   d.seen.push(key); if(d.seen.length>300) d.seen=d.seen.slice(-300);
   s.pays.forEach(([from,to,pts])=>{
@@ -2109,13 +2304,13 @@ $('#pf-name-form').onsubmit=e=>{
    and once a game starts the other seats are played by Level 2 CPUs. Your table's timers are applied for real. */
 /* Every seat that isn't you is a CPU with a difficulty level and a name to match */
 function seatBot(t,used,level){level=level||1+rngInt(4); const nm=cpuName(level,used); t.bots[nm]=level; return nm}
-const tableDefaults={seats:4,match:'endless',target:25,play:'live',turn:30,bank:120,dc:120};
+const tableDefaults={seats:4,match:'endless',target:25,play:'live',turn:30,bank:120,dc:120,tourney:false,tsize:8,twins:2};
 const draft=Object.assign({},tableDefaults,store.get('thirteen.tabledraft',{}));
 let LB={tables:[],private:[],filter:'all',sort:'mode',dir:'desc',modeDir:'desc'}, WR=null;
 function myName(){return profile.name}
 function sampleTables(){ return []; }   // offline, the lobby lists only the CPU tables
-const LVL=['','Beginner','Solid','Strong','Expert'];
-const matchLabel=t=>t.match==='target'?`Target ${t.target}`:t.match==='casual'?'Casual':'Endless';
+const LVL=['','Beginner','Solid','Strong','Expert','Master'];
+const matchLabel=t=>t.match==='tourney'?`Tournament · ${t.tsize||''} players · first to ${t.twins||1}`:t.match==='target'?`Target ${t.target}`:t.match==='casual'?'Casual':'Endless';
 /* One CPU table of each size is always open (endless): 1/2, 2/3 and 3/4 seats filled with CPUs of random levels.
    When one fills up or starts, a fresh one replaces it. */
 /* Lobby tag: "Players" only when a real person is at the table right now; "CPU" when it's CPUs only; nothing for an empty table */
@@ -2152,12 +2347,12 @@ function renderLobby(){
   let list=LB.tables.filter(t=>t.players.length<t.seats&&(LB.filter==='all'||(LB.filter==='cpu')===!!t.cpuRoom));
   const dir=LB.dir==='asc'?1:-1;
   // Mode: CPU tables first, then tables other players host; within each, Endless, Target, Casual; then busiest first
-  const modeKey=t=>(t.cpuRoom?0:3)+['endless','target','casual'].indexOf(t.match);
+  const modeKey=t=>(t.cpuRoom?0:3)+['endless','target','casual','tourney'].indexOf(t.match);
   list.sort(LB.sort==='seats'?(a,b)=>dir*(a.players.length-b.players.length)||modeKey(a)-modeKey(b)
     :(a,b)=>(LB.modeDir==='desc'?1:-1)*(modeKey(a)-modeKey(b)||b.players.length-a.players.length||a.age-b.age));
   list.sort((a,b)=>(b.dedicated?1:0)-(a.dedicated?1:0));   // featured tables are pinned to the top
   $('#table-list').innerHTML=list.length?list.map(t=>{const full=t.players.length>=t.seats;
-    return `<button class="tl-item${full?' full':''}${t.dedicated?' featured':''}" data-id="${t.id}" ${full?'disabled':''}><b>${t.dedicated?'<span class="pill feat">★ Featured</span> '+esc(t.dedicated):esc(t.host)+"'s table"}</b>
+    return `<button class="tl-item${full?' full':''}${t.dedicated?' featured':''}" data-id="${t.id}" ${full?'disabled':''}><b>${t.dedicated?'<span class="pill feat">★ Featured</span> '+esc(t.dedicated):t.match==='tourney'?'<span class="pill tour">Tournament</span> '+esc(t.host)+"'s tournament":esc(t.host)+"'s table"}</b>
       <span class="seats">${t.players.length}/${t.seats}<small>${full?'FULL':'SEATS'}</small></span>
       <span class="meta">${tablePill(t)}${matchLabel(t)} · ${t.turn}s turns · ${fmt(t.bank)} bank</span>${t.inProgress?'<span class="inprog">In progress</span>':''}</button>`}).join('')
     :`<p class="hint" style="text-align:center;padding:20px 0">${LB.filter==='online'?(NET.ready?'No one is hosting a table right now. Create one, or join a private game.':'Log in to play at tables hosted by other players.'):'No tables match. Try another filter or create one.'}</p>`;
@@ -2290,10 +2485,20 @@ function renderNewTable(){
   mark('#nt-seats',draft.seats); mark('#nt-match',draft.match); draft.play='live'; mark('#nt-dc',draft.dc);
   $('#nt-target-row').hidden=draft.match!=='target'; $('#nt-target').value=draft.target; $('#nt-target-out').textContent=draft.target;
   $('#nt-turn').textContent=draft.turn+'s'; $('#nt-bank').textContent=fmt(draft.bank);
+  // admin-only options (the server checks too): tournaments
+  const adm=typeof NET!=='undefined'&&NET.ready&&NET.admin&&NT_FROM==='lobby', tour=adm&&draft.tourney;
+  $('#nt-admin').hidden=!adm; $('#nt-tourney').setAttribute('aria-checked',String(!!draft.tourney)); $('#nt-t-opts').hidden=!draft.tourney;
+  mark('#nt-tsize',draft.tsize); $('#nt-twins').value=draft.twins; $('#nt-twins-out').textContent=draft.twins;
+  $('#nt-twins-hint').innerHTML=`First to <b>${draft.twins}</b> game win${draft.twins===1?'':'s'} knocks out their opponent. Points don't count. ${draft.tsize} players means ${Math.log2(draft.tsize)} rounds.`;
+  $('#nt-seats').closest('.panel').hidden=tour; $('#nt-match').closest('.panel').hidden=tour;
+  $('#btn-opentable').textContent=tour?'Create tournament':'Create lobby';
   store.set('thirteen.tabledraft',draft);
 }
 [['#nt-seats','seats',true],['#nt-match','match'],['#nt-dc','dc',true]].forEach(([id,key,num])=>
   $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{draft[key]=num?+b.dataset.v:b.dataset.v;renderNewTable()}));
+$('#nt-tourney').onclick=()=>{draft.tourney=!draft.tourney; renderNewTable()};
+$('#nt-tsize').querySelectorAll('button').forEach(b=>b.onclick=()=>{draft.tsize=+b.dataset.v; renderNewTable()});
+$('#nt-twins').oninput=e=>{draft.twins=+e.target.value; renderNewTable()};
 $('#nt-target').oninput=e=>{draft.target=+e.target.value;$('#nt-target-out').textContent=draft.target;store.set('thirteen.tabledraft',draft)};
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{
   const [k,d]=b.dataset.step.split(':'); const lim=k==='turn'?[15,90]:[60,180];
@@ -2391,8 +2596,8 @@ function renderWaiting(){
     if(t.players.length>=t.seats) return;
     const level=WR.lastLevel||2, nm=cpuName(level,t.players); t.players.push(nm); t.bots[nm]=level; renderWaiting(); checkFull();
   });
-  document.querySelectorAll('[data-lvl]').forEach(b=>b.onclick=()=>{ // cycle Beginner → Solid → Strong → Expert, with a name to match
-    const old=b.dataset.lvl, level=t.bots[old]%4+1, nm=cpuName(level,t.players.filter(x=>x!==old));
+  document.querySelectorAll('[data-lvl]').forEach(b=>b.onclick=()=>{ // cycle Beginner → Solid → Strong → Expert → Master, with a name to match
+    const old=b.dataset.lvl, level=t.bots[old]%5+1, nm=cpuName(level,t.players.filter(x=>x!==old));
     t.players[t.players.indexOf(old)]=nm; delete t.bots[old]; t.bots[nm]=level; WR.lastLevel=level; renderWaiting();
   });
   const st=$('#wr-status');
@@ -2607,10 +2812,10 @@ function onServer(m){
     case 'announce': announce(m.text); break;
     case 'error': toast(m.msg); break;
     case 'toast': toast(m.msg,'info'); break;
-    case 'lobby': NET.lobby=m.tables; NET.table=null;
+    case 'lobby': NET.lobby=m.tables; NET.table=null; closeBracket();
       if(!$('#waiting').hidden||(!$('#game').hidden&&G&&G.online)){ G=null; $('#overlay').hidden=true; show('lobby'); }
       if(!$('#lobby').hidden) renderLobby(); break;
-    case 'table': NET.table=m; onTable(m); break;
+    case 'table': NET.table=m; onTable(m); drawBracket(); break;
     case 'game': NET.view=m; NET.offset=Date.now()-m.now; applyView(m); break;
   }
 }
@@ -2623,7 +2828,7 @@ renderLobby=function(){
   if(!NET.ready) return _renderLobby();
   // shape server listings like the offline ones so the same list, filter and sort code draws them
   LB.tables=NET.lobby.map((t,k)=>({id:t.id,online:true,cpuRoom:t.cpuRoom,host:t.host,seats:t.seats,players:t.filled?[t.host,...Array(t.filled-1).fill('')]:[],
-    inProgress:!!t.inProgress,dedicated:t.dedicated||null,humans:t.humans,cpus:t.cpus,bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
+    inProgress:!!t.inProgress,dedicated:t.dedicated||null,humans:t.humans,cpus:t.cpus,bots:t.hostLevel?{[t.host]:t.hostLevel}:{},match:t.match,target:t.target,tsize:t.tsize,twins:t.twins,play:t.play,turn:t.turn,bank:t.bank,dc:t.dc,age:k}));
   const save=window.ensureCpuRooms; ensureCpuRooms=()=>{}; _renderLobby(); ensureCpuRooms=save;
   document.querySelectorAll('.tl-item').forEach(b=>b.onclick=()=>NET.send({t:'join',id:b.dataset.id}));
 };
@@ -2632,6 +2837,7 @@ $('#btn-opentable').onclick=()=>{
   if(!NET.ready) return _openTable();
   if(session.guest) return;
   const o={t:'create',seats:draft.seats,play:draft.play,match:draft.match,target:draft.target,turn:draft.turn,bank:draft.bank,dc:draft.dc};
+  if(NET.admin&&draft.tourney) o.tourney={size:draft.tsize,wins:draft.twins};
   if(ntPrivate){ const name=$('#nt-pname').value.trim(), pass=$('#nt-ppass').value, err=$('#nt-perr');
     if(!name){err.textContent='Enter a lobby name.';err.hidden=false;return}
     if(pass.length<4){err.textContent='Use a password of at least 4 characters.';err.hidden=false;return}
@@ -2655,8 +2861,10 @@ function onTable(t){
   else if(t.state==='playing'){ $('#overlay').hidden=true; if(G&&G.online) renderChips(); }
 }
 function renderNetWaiting(t){
-  const me=t.you, LVLN=['','Beginner','Solid','Strong','Expert'];
-  $('#wr-title').textContent=t.dedicated||t.private||(t.isHost?'Your table':`${t.seats[t.host]?t.seats[t.host].name:'Open'}’s table`);
+  const me=t.you, LVLN=['','Beginner','Solid','Strong','Expert','Master'];
+  const T=t.tourney;
+  $('#wr-title').textContent=t.tm&&T?roundName(T.rounds.length,t.tm.r,true):T?T.name:t.dedicated||t.private||(t.isHost?'Your table':`${t.seats[t.host]?t.seats[t.host].name:'Open'}’s table`);
+  $('#wr-bracket').hidden=!T;
   const r=t.rules;
   $('#wr-rules').innerHTML=`<div class="label">Table rules</div><div class="rules-line">${t.private?'<span>Lobby <b>Private</b></span>':''}
     <span>Scoring <b>${matchLabel(r)}</b></span>
@@ -2670,20 +2878,42 @@ function renderNetWaiting(t){
     rows+=`<div class="seat-row">${av}<span class="nm">${esc(s.name)}${s.connected?'':' <small style="color:var(--muted)">(away)</small>'}</span>
       ${k===t.host?'<span class="tag">Host</span>':''}${isMe?'<span class="tag">You</span>':''}
       ${s.cpu?(t.isHost?`<button class="lvl-chip" data-lvl="${esc(s.id)}">${LVLN[s.level]} ▾</button>`:`<span class="tag cpu">CPU · ${LVLN[s.level]}</span>`):''}
-      ${t.isHost&&!isMe?`<button class="kick" data-kick="${esc(s.id)}">Remove</button>`:''}</div>`;
+      ${t.isHost&&!isMe&&!t.tm?`<button class="kick" data-kick="${esc(s.id)}">Remove</button>`:''}</div>`;
   }
   $('#wr-seats').innerHTML=rows;
   document.querySelectorAll('#wr-seats [data-add]').forEach(b=>b.onclick=()=>NET.send({t:'addCpu',level:NET.lastLevel||2}));
-  document.querySelectorAll('#wr-seats [data-lvl]').forEach(b=>b.onclick=()=>{const s=t.seats.find(x=>x.id===b.dataset.lvl); const lv=s.level%4+1; NET.lastLevel=lv; NET.send({t:'cpuLevel',seat:s.id,level:lv})});
+  document.querySelectorAll('#wr-seats [data-lvl]').forEach(b=>b.onclick=()=>{const s=t.seats.find(x=>x.id===b.dataset.lvl); const lv=s.level%5+1; NET.lastLevel=lv; NET.send({t:'cpuLevel',seat:s.id,level:lv})});
   document.querySelectorAll('#wr-seats [data-kick]').forEach(b=>b.onclick=()=>NET.send({t:'remove',seat:b.dataset.kick}));
-  const sb=$('#wr-start'); sb.hidden=!t.isHost||t.cpuRoom; sb.disabled=t.seats.length<2;
+  const sb=$('#wr-start'); sb.hidden=!t.isHost||t.cpuRoom||!!t.tm; sb.disabled=T?t.seats.length<t.max:t.seats.length<2;
   clearInterval(netCountT);
   const tick=()=>{ const st=$('#wr-status');
     if(t.countdownEnds){ const left=Math.max(0,Math.ceil((t.countdownEnds-t.now-(Date.now()-NET.tableAt))/1000)); st.className='wr-status go';
-      st.textContent=t.isHost?`Table full. Starting in ${left}s. Make any changes, or tap Start to begin now.`:`Table full. Starting in ${left}s…`; }
+      st.textContent=t.tm?`Your match starts in ${left}s. First to ${T.wins} win${T.wins===1?'':'s'} advances.`:T?(t.isHost?`Tournament full. The draw happens in ${left}s, or tap Start now.`:`Tournament full. The draw happens in ${left}s…`):t.isHost?`Table full. Starting in ${left}s. Make any changes, or tap Start to begin now.`:`Table full. Starting in ${left}s…`; }
+    else if(T&&!t.tm){ const need=t.max-t.seats.length; st.className='wr-status'; st.textContent=`Waiting for ${need} more player${need===1?'':'s'}.${t.isHost?' You can fill seats with CPUs.':''} Matchups are drawn at random when it starts.`; }
     else { st.className='wr-status'; st.textContent=t.isHost?(t.seats.length<2?'Waiting for players to join.':'Start now, or wait for the table to fill.'):'Waiting for the table to fill or the host to start.'; } };
   NET.tableAt=Date.now(); tick(); netCountT=setInterval(tick,500);
 }
+$('#wr-bracket').onclick=openBracket;
+/* ----- tournament bracket ----- */
+function roundName(n,r,one){ const left=n-r; return left===1?'Final':left===2?(one?'Semifinal':'Semifinals'):left===3?(one?'Quarterfinal':'Quarterfinals'):`Round of ${2**left}`; }
+function openBracket(){ $('#bracket').hidden=false; drawBracket(); }
+function closeBracket(){ const b=document.getElementById('bracket'); if(b) b.hidden=true; }
+function drawBracket(){
+  const el=$('#bracket'); if(el.hidden) return;
+  const T=NET.table&&NET.table.tourney; if(!T) return closeBracket();
+  const pre=T.state==='waiting';
+  const p=(e,slot,m,r)=>{
+    if(!e) return `<div class="bp tbd"><span>${pre&&r===0?'Open seat':'To be decided'}</span></div>`;
+    const cls=[m.winner==null?'':m.winner===slot?'win':'lose',e.you?'you':''].join(' ');
+    const w=pre||(!m.live&&m.winner==null&&!m.wins[0]&&!m.wins[1])?'':m.walkover&&m.winner===slot?'✓':m.wins[slot];
+    return `<div class="bp ${cls}"><span>${esc(e.name)}${e.you?' (you)':''}</span><b>${w}</b></div>`; };
+  const cols=T.rounds.map((rd,r)=>`<div class="br-col"><div class="label">${roundName(T.rounds.length,r)}</div><div class="br-ms">${rd.map(m=>`<div class="bm${m.live?' live':''}">${p(m.a,0,m,r)}${p(m.b,1,m,r)}${m.live?'<div class="bm-live">● PLAYING</div>':''}</div>`).join('')}</div></div>`).join('');
+  el.innerHTML=`<div class="br-box"><div class="br-head"><h3>${esc(T.name)}<small>${T.size} players · first to ${T.wins} win${T.wins===1?'':'s'} · single elimination</small></h3><button class="icon-btn" id="br-x" aria-label="Close bracket">×</button></div>
+    ${T.champion?`<div class="br-champ">🏆 ${esc(T.champion)} wins the tournament</div>`:pre?'<p class="hint" style="margin:0">Matchups are drawn at random when the tournament starts.</p>':''}
+    <div class="br-scroll"><div class="br-cols">${cols}</div></div></div>`;
+  $('#br-x').onclick=closeBracket;
+}
+$('#bracket').onclick=e=>{ if(e.target.id==='bracket') closeBracket(); };
 const _wrStart=$('#wr-start').onclick; $('#wr-start').onclick=()=>NET.table?NET.send({t:'start'}):_wrStart();
 const _wrLeave=$('#wr-leave').onclick; $('#wr-leave').onclick=$('#wr-leave2').onclick=()=>{ if(NET.table){ NET.send({t:'leave'}); NET.table=null; clearInterval(netCountT); show('lobby'); renderLobby(); } else _wrLeave(); };
 
@@ -2760,24 +2990,30 @@ let netSumT=null;
 function showNetSummary(t){
   const s=t.summary, r=s.result, n=t.seats.length, me=t.you, order=[...Array(n).keys()].map(k=>(k+Math.max(0,me))%n);
   const name=j=>j===me?'You':t.seats[j].name;
-  const head=r.type==='win'?(r.winner===me?'You went out!':`${t.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${t.seats[r.loser].name} is stuck with the 2♠`);
+  const T=t.tourney, tw=t.tmWins;
+  const head=!r?'Match over':r.type==='win'?(r.winner===me?'You went out!':`${t.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${t.seats[r.loser].name} is stuck with the 2♠`);
   recordPlayerTally(t);
   // Net is this table's running tally for the players sitting here now (it resets when someone leaves the table)
-  const rows=order.map((j,k)=>`<tr><td><span class="who"><span class="dot" style="background:${COLORS[k]}"></span>${esc(name(j))}</span></td><td>${r.counts[j]}</td><td class="${s.delta[j]>0?'pos':s.delta[j]<0?'neg':''}">${signed(s.delta[j])||'0'}</td><td>${t.rules.match==='casual'?'—':signed(s.net[j])||'0'}</td></tr>`).join('');
+  const rows=!r?'':order.map((j,k)=>`<tr><td><span class="who"><span class="dot" style="background:${COLORS[k]}"></span>${esc(name(j))}</span></td><td>${r.counts[j]}</td><td class="${s.delta[j]>0?'pos':s.delta[j]<0?'neg':''}">${signed(s.delta[j])||'0'}</td><td>${T&&tw?tw[j]:t.rules.match==='casual'?'—':signed(s.net[j])||'0'}</td></tr>`).join('');
   const champ=s.champ>=0;
+  const alive=T&&T.status==='alive'&&T.state==='running';
+  const title=T&&champ?(me<0?esc(t.seats[s.champ].name)+' wins the match':s.champ===me?(T.status==='champion'?'You win the tournament! 🏆':'You win the match!'):'Knocked out')
+    :champ?(s.champ===me?'You win the match!':esc(t.seats[s.champ].name)+' wins the match'):esc(head);
   const breakOn=!!s.breakEnds, two=n===2;
   $('#overlay').innerHTML=`<div class="sheet" role="dialog" aria-modal="true">
-    <div class="label">Game result · Deal ID ${esc(r.proof.hash.slice(0,8))}</div>
-    <h3>${champ?(s.champ===me?'You win the match!':esc(t.seats[s.champ].name)+' wins the match'):esc(head)}</h3>
-    ${r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
-    <table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="sum-top"><div class="label">${r?'Game result · Deal ID '+esc(r.proof.hash.slice(0,8)):'Tournament match'}</div>${T?'<button class="friends-btn ladder-btn" id="ns-bracket" aria-label="Show the bracket"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M7.5 3v18M16.5 3v18M7.5 7h9M7.5 12h9M7.5 17h9"/></svg></button>':''}</div>
+    <h3>${title}</h3>
+    ${s.forfeit?`<p>${s.champ===me?'Your opponent left, so you win the match by forfeit.':'The match ended by forfeit.'}</p>`:''}
+    ${T&&tw&&t.tm?`<p class="t-score">${roundName(T.rounds.length,t.tm.r,true)} · ${esc(name(order[0]))} ${tw[order[0]]} – ${tw[order[1]]} ${esc(name(order[1]))} · first to ${T.wins}</p>`:''}
+    ${r&&r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
+    ${r?`<table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>${T?'Wins':'Net'}</th></tr></thead><tbody>${rows}</tbody></table>`:''}
     ${me<0?`<p class="hint" style="text-align:center">${t.viewer?(n+(t.waiting||[]).length<t.max?'You\'re watching this table. Tap Join to be dealt in next game.':'You\'re watching this table. It\'s full right now.'):'Your seat is reserved. You\'ll be dealt in when the next game starts.'}</p>`:''}
     <p class="brk-status" id="ns-status"></p>
     ${champ||me<0?'':`<div class="brk-row">
       <button class="btn btn-ghost" id="ns-pause" ${!t.isHost&&!two?'disabled':''}>${s.hostPause?'Unpause':'Pause'}</button>
       ${n>2&&!breakOn&&!s.hostPause?`<label class="vote"><input type="checkbox" id="ns-vote" ${s.voted?'checked':''}><span>Vote pause</span><b>${s.votes}/${n}</b></label>`:''}
     </div>`}
-    <div class="sum-actions"><button class="btn btn-ghost" id="ns-leave">Leave table</button>${t.viewer&&n+(t.waiting||[]).length<t.max?'<button class="btn btn-brass ready-btn" id="ns-join">Join</button>':''}${champ||me<0?'':`<button class="btn btn-brass ready-btn" id="ns-ready" hidden ${s.isReady?'disabled':''}>${s.isReady?'Ready ✓':'Ready'} ${s.ready}/${n}</button>`}</div>
+    <div class="sum-actions"><button class="btn btn-ghost" id="ns-leave">${alive?'Leave tournament':'Leave table'}</button>${t.viewer&&n+(t.waiting||[]).length<t.max?'<button class="btn btn-brass ready-btn" id="ns-join">Join</button>':''}${champ||me<0?'':`<button class="btn btn-brass ready-btn" id="ns-ready" hidden ${s.isReady?'disabled':''}>${s.isReady?'Ready ✓':'Ready'} ${s.ready}/${n}</button>`}</div>
   </div>`;
   $('#overlay').hidden=false;
   const q=id=>document.getElementById(id);
@@ -2785,12 +3021,14 @@ function showNetSummary(t){
   if(q('ns-ready')) q('ns-ready').onclick=()=>NET.send({t:'ready'});
   if(q('ns-join')) q('ns-join').onclick=()=>{ q('ns-join').disabled=true; NET.send({t:'sit'}); };   // watching: take a seat for the next game
   if(q('ns-vote')) q('ns-vote').onchange=e=>NET.send({t:'vote',on:e.target.checked});
-  q('ns-leave').onclick=()=>{ NET.send({t:'leave'}); NET.table=null; G=null; $('#overlay').hidden=true; show('lobby'); };
+  q('ns-leave').onclick=()=>{ NET.send({t:'leave'}); NET.table=null; G=null; $('#overlay').hidden=true; closeBracket(); show('lobby'); };
+  if(alive) twoTap(q('ns-leave'),champ?'Tap again to withdraw':'Tap again to forfeit',q('ns-leave').onclick);
+  if(q('ns-bracket')) q('ns-bracket').onclick=openBracket;
   clearInterval(netSumT); const at=Date.now();
   const tick=()=>{ const el=q('ns-status'); if(!el) return clearInterval(netSumT); const now=t.now+(Date.now()-at);
     el.className='brk-status'+(s.hostPause||breakOn?' on':'');
     const rb=q('ns-ready'); if(rb) rb.hidden=s.hostPause||(!breakOn&&now<(s.readyAt||0));
-    el.textContent=s.hostPause?'Paused by the host. The next game starts when the host unpauses.':breakOn?`Break: ${fmt((s.breakEnds-now)/1000)} left. Starts early once everyone is ready.`:s.isReady?`You're ready. Next game in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))}s, or sooner once everyone is ready.`:champ?`Back to the table in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))}s.`:`Next game starts in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))} seconds.`; };
+    el.textContent=s.hostPause?'Paused by the host. The next game starts when the host unpauses.':breakOn?`Break: ${fmt((s.breakEnds-now)/1000)} left. Starts early once everyone is ready.`:s.isReady?`You're ready. Next game in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))}s, or sooner once everyone is ready.`:T&&champ?(s.champ===me?(T.status==='champion'?'Congratulations, champion!':'Your next match opens as soon as your next opponent is decided. You’ll move there automatically.'):T.state==='done'?`${T.champion} won the tournament.`:'You can stay to follow the bracket, or leave.'):champ?`Back to the table in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))}s.`:`Next game starts in ${Math.max(0,Math.ceil((s.endsAt-now)/1000))} seconds.`; };
   tick(); netSumT=setInterval(tick,500);
 }
 
@@ -3052,7 +3290,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-201850) */
+/* Offline support + automatic updates (build 20261108-223952) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
