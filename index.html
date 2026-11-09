@@ -566,6 +566,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .pl-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line)}
 .pl-row .nm{display:flex; flex-direction:column; min-width:0}
 .pl-row .nm small{color:var(--muted); font-size:12px}
+.ss-live{color:var(--ok); letter-spacing:.08em; margin-left:6px}
+.ss-head{display:flex; justify-content:space-between; gap:10px; font-size:13px; color:var(--muted); padding:2px 0 4px}
+.ss-head b{color:var(--cream); font-weight:600}
+.ss-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 0; border-top:1px solid var(--line); font-size:15px}
+.ss-row span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ss-row small{color:var(--muted); font-size:12px; margin-left:4px}
+.ss-row b{font-family:var(--cond); font-size:18px; font-variant-numeric:tabular-nums}
+.ss-row.you span{color:var(--brass)}
+.ss-row.gone span{color:var(--muted)}
+details.ss{border-top:1px solid var(--line); padding:8px 0}
+details.ss:first-child{border-top:0}
+details.ss summary{list-style:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px}
+details.ss summary::-webkit-details-marker{display:none}
+details.ss summary .t{display:flex; flex-direction:column; min-width:0}
+details.ss summary .t span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+details.ss summary small{color:var(--muted); font-size:12px}
+details.ss summary b{font-family:var(--cond); font-size:20px; font-variant-numeric:tabular-nums}
+details.ss[open] summary{margin-bottom:4px}
+.results tr.gone td{color:var(--muted)}
+.results tr.gone small{font-size:11px; letter-spacing:.06em; text-transform:uppercase; margin-left:4px}
 .pl-row b{font-family:var(--cond); font-size:20px; font-variant-numeric:tabular-nums}
 .pl-row b.pos{color:var(--ok)} .pl-row b.neg{color:#ff8f8f}
 #btn-clear-players.armed{background:#ff8a1f; border-color:#ffc27a; color:#1d1000; box-shadow:0 0 0 2px rgba(255,170,80,.55),0 0 22px 6px rgba(255,138,31,.7)}
@@ -813,11 +833,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   </div>
   </div>
   <div id="pf-players" class="pf-pane" hidden>
+    <div class="panel" id="pl-cur-panel" hidden>
+      <div class="label">Current session <span class="ss-live">● Live</span></div>
+      <div id="pl-cur"></div>
+    </div>
+    <div class="panel" id="pl-prev-panel" hidden>
+      <div class="label">Previous sessions</div>
+      <div id="pl-prev"></div>
+    </div>
     <div class="panel">
-      <div class="label">You vs other players</div>
+      <div class="label">All-time with each player</div>
       <div class="players-list" id="pl-list"></div>
     </div>
-    <p class="hint">Your overall tally with each player you've sat with, across every table. Endless and Target games count; Casual games and CPUs don't.</p>
+    <p class="hint">A session is your run at one table: everyone who played there, including CPUs and anyone who left. All-time is your overall tally with each player across every table. Endless and Target games count; Casual games and CPUs don't count toward all-time.</p>
     <div class="row"><button class="btn btn-ghost" id="btn-clear-players">Clear player stats</button></div>
   </div>
   <div id="pf-stats" class="pf-pane" hidden>
@@ -2248,7 +2276,21 @@ function statRows(b,emptyMsg){
 }
 /* ----- Players: your overall tally with each person, across every table (Endless and Target only) ----- */
 const PKEY='thirteen.players';
-let guestPlayers=null;
+let guestPlayers=null, guestSessions=null;
+// table sessions you've played in (newest first, last 30): who played and each player's running tally
+const SKEY='thirteen.sessions';
+function loadSessions(){ return session.guest?(guestSessions||(guestSessions=[])):store.get(SKEY,[]); }
+function saveSessions(l){ if(session.guest) guestSessions=l; else store.set(SKEY,l); }
+const tableTitle=t=>t.dedicated||t.private||((t.seats[t.host]?t.seats[t.host].name:'A player')+'’s table');
+function recordSession(t){
+  const sv=t.session; if(!sv||!t.summary||!sv.rows.some(r=>r.id===NET.me)) return;
+  const l=loadSessions(); let e=l.find(x=>x.id===sv.id);
+  if(!e){ e={id:sv.id,started:Date.now()}; l.unshift(e); }
+  Object.assign(e,{name:tableTitle(t),mode:matchLabel(t.rules),at:Date.now(),rows:sv.rows.map(r=>({name:r.name,cpu:!!r.cpu,net:r.net,you:r.id===NET.me}))});
+  l.sort((a,b)=>b.at-a.at); saveSessions(l.slice(0,30));
+}
+const ssRows=(rows,live)=>rows.map(r=>`<div class="ss-row${r.you?' you':''}${live&&!r.here&&!r.you?' gone':''}"><span>${esc(r.name)}${r.you?' (you)':''}${r.cpu?'<small>CPU</small>':''}${live&&!r.here&&!r.you?'<small>left</small>':''}</span><b class="${r.net>0?'pos':r.net<0?'neg':''}">${signed(r.net)||'0'}</b></div>`).join('');
+const ssWhen=ms=>new Date(ms).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 function loadPlayers(){ return session.guest?(guestPlayers||(guestPlayers={tally:{},seen:[]})):store.get(PKEY,{tally:{},seen:[]}); }
 function savePlayers(d){ if(session.guest) guestPlayers=d; else store.set(PKEY,d); }
 function recordPlayerTally(t){
@@ -2265,18 +2307,31 @@ function recordPlayerTally(t){
   t.seats.forEach((o,j)=>{ if(j===me||o.cpu) return; const e=d.tally[o.id]||(d.tally[o.id]={name:o.name,net:0,games:0}); e.name=o.name; e.games++; });
   savePlayers(d);
 }
-function renderPlayers(){
+function renderPlayers(noPull){
+  // current session: the table you're at right now, live
+  const T=typeof NET!=='undefined'&&NET.table, sv=T&&T.session, live=sv&&sv.rows.some(r=>r.id===NET.me)?sv:null;
+  $('#pl-cur-panel').hidden=!live;
+  if(live) $('#pl-cur').innerHTML=`<div class="ss-head"><b>${esc(tableTitle(T))}</b><span>${esc(matchLabel(T.rules))}</span></div>`+ssRows(live.rows.map(r=>Object.assign({},r,{you:r.id===NET.me})),true);
+  // previous sessions: tap one to see everyone's tally
+  const prev=loadSessions().filter(e=>!live||e.id!==live.id);
+  $('#pl-prev-panel').hidden=!prev.length;
+  $('#pl-prev').innerHTML=prev.map(e=>{ const me=e.rows.find(r=>r.you)||{net:0};
+    return `<details class="ss"><summary><span class="t"><span>${esc(e.name)}</span><small>${esc(e.mode)} · ${ssWhen(e.at)} · ${e.rows.length} players</small></span><b class="${me.net>0?'pos':me.net<0?'neg':''}">${signed(me.net)||'0'}</b></summary>${ssRows(e.rows,false)}</details>`; }).join('');
+  if(noPull) return renderPlayers.all();
   if((typeof CLOUD!=='undefined')&&!renderPlayers.pulling){ renderPlayers.pulling=true; CLOUD.pullTallies().finally(()=>{ renderPlayers.pulling=false; }); }
+  renderPlayers.all();
+}
+renderPlayers.all=()=>{
   const list=Object.values(loadPlayers().tally).sort((a,b)=>Math.abs(b.net)-Math.abs(a.net)||b.games-a.games);
   $('#pl-list').innerHTML=list.length?list.map(e=>`<div class="pl-row"><span class="nm"><span>${esc(e.name)}</span><small>${e.net>0?'Owes you':e.net<0?'You owe them':'All square'} · ${e.games} game${e.games===1?'':'s'}</small></span><b class="${e.net>0?'pos':e.net<0?'neg':''}">${signed(e.net)||'0'}</b></div>`).join('')
     :'<p class="st-empty">No games against other players yet. Play Endless or Target games online and your tally with each player shows up here.</p>';
-  const b=$('#btn-clear-players'); b.classList.remove('armed'); b.textContent='Clear player stats'; b.disabled=!list.length;
-}
+  const b=$('#btn-clear-players'); b.classList.remove('armed'); b.textContent='Clear player stats'; b.disabled=!list.length&&!loadSessions().length;
+};
 $('#btn-clear-players').onclick=()=>{
   const b=$('#btn-clear-players');
   // two taps, like Pass: the first lights it up orange, the second clears
   if(!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent='Tap again to clear'; return; }
-  savePlayers({tally:{},seen:loadPlayers().seen}); renderPlayers(); toast('Player stats cleared.','info');
+  savePlayers({tally:{},seen:loadPlayers().seen}); saveSessions([]); renderPlayers(); toast('Player stats cleared.','info');
 };
 function renderStats(){
   const s=loadStats();
@@ -2815,7 +2870,7 @@ function onServer(m){
     case 'lobby': NET.lobby=m.tables; NET.table=null; closeBracket();
       if(!$('#waiting').hidden||(!$('#game').hidden&&G&&G.online)){ G=null; $('#overlay').hidden=true; show('lobby'); }
       if(!$('#lobby').hidden) renderLobby(); break;
-    case 'table': NET.table=m; onTable(m); drawBracket(); break;
+    case 'table': NET.table=m; onTable(m); drawBracket(); if(!$('#pf-players').hidden) renderPlayers(true); break;
     case 'game': NET.view=m; NET.offset=Date.now()-m.now; applyView(m); break;
   }
 }
@@ -2992,9 +3047,12 @@ function showNetSummary(t){
   const name=j=>j===me?'You':t.seats[j].name;
   const T=t.tourney, tw=t.tmWins;
   const head=!r?'Match over':r.type==='win'?(r.winner===me?'You went out!':`${t.seats[r.winner].name} went out!`):(r.loser===me?'Stuck with the 2♠':`${t.seats[r.loser].name} is stuck with the 2♠`);
-  recordPlayerTally(t);
+  recordPlayerTally(t); recordSession(t);
   // Net is this table's running tally for the players sitting here now (it resets when someone leaves the table)
   const rows=!r?'':order.map((j,k)=>`<tr><td><span class="who"><span class="dot" style="background:${COLORS[k]}"></span>${esc(name(j))}</span></td><td>${r.counts[j]}</td><td class="${s.delta[j]>0?'pos':s.delta[j]<0?'neg':''}">${signed(s.delta[j])||'0'}</td><td>${T&&tw?tw[j]:t.rules.match==='casual'?'—':signed(s.net[j])||'0'}</td></tr>`).join('');
+  // everyone else who played at this table this session and has since left: their running tally stays
+  const seatedIds=new Set(t.seats.map(x=>x.id));
+  const goneRows=r&&!T&&t.session?t.session.rows.filter(x=>!seatedIds.has(x.id)).map(x=>`<tr class="gone"><td><span class="who"><span class="dot" style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)"></span>${esc(x.name)}<small>left</small></span></td><td>—</td><td>—</td><td class="${x.net>0?'pos':x.net<0?'neg':''}">${signed(x.net)||'0'}</td></tr>`).join(''):'';
   const champ=s.champ>=0;
   const alive=T&&T.status==='alive'&&T.state==='running';
   const title=T&&champ?(me<0?esc(t.seats[s.champ].name)+' wins the match':s.champ===me?(T.status==='champion'?'You win the tournament! 🏆':'You win the match!'):'Knocked out')
@@ -3006,7 +3064,7 @@ function showNetSummary(t){
     ${s.forfeit?`<p>${s.champ===me?'Your opponent left, so you win the match by forfeit.':'The match ended by forfeit.'}</p>`:''}
     ${T&&tw&&t.tm?`<p class="t-score">${roundName(T.rounds.length,t.tm.r,true)} · ${esc(name(order[0]))} ${tw[order[0]]} – ${tw[order[1]]} ${esc(name(order[1]))} · first to ${T.wins}</p>`:''}
     ${r&&r.type==='spade'?`<div class="stuck">${cardHTML(mk(12,3),58,0,0)}</div><p>The 2♠ can't be a last card.</p>`:''}
-    ${r?`<table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>${T?'Wins':'Net'}</th></tr></thead><tbody>${rows}</tbody></table>`:''}
+    ${r?`<table class="results"><thead><tr><th>Player</th><th>Cards</th><th>Game</th><th>${T?'Wins':'Net'}</th></tr></thead><tbody>${rows}${goneRows}</tbody></table>`:''}
     ${me<0?`<p class="hint" style="text-align:center">${t.viewer?(n+(t.waiting||[]).length<t.max?'You\'re watching this table. Tap Join to be dealt in next game.':'You\'re watching this table. It\'s full right now.'):'Your seat is reserved. You\'ll be dealt in when the next game starts.'}</p>`:''}
     <p class="brk-status" id="ns-status"></p>
     ${champ||me<0?'':`<div class="brk-row">
@@ -3290,7 +3348,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-223952) */
+/* Offline support + automatic updates (build 20261109-171345) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
