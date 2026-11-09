@@ -585,7 +585,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .invite-pop .row{margin-top:8px}
 #fr-drawer{position:fixed; inset:0; z-index:150}
 #fr-drawer .fr-back{position:absolute; inset:0; background:rgba(0,0,0,.45); opacity:0; transition:opacity .2s}
-#fr-drawer .fr-panel{position:absolute; top:0; right:0; bottom:0; width:min(360px,88vw); background:var(--panel,#16201a); border-left:1px solid var(--brass); box-shadow:-14px 0 34px rgba(0,0,0,.55); display:flex; flex-direction:column; transform:translateX(100%); transition:transform .22s ease-out; padding-top:env(safe-area-inset-top,0px)}
+#fr-drawer .fr-panel{position:absolute; top:0; right:0; bottom:0; width:min(306px,75vw); background:var(--panel,#16201a); border-left:1px solid var(--brass); box-shadow:-14px 0 34px rgba(0,0,0,.55); display:flex; flex-direction:column; transform:translateX(100%); transition:transform .22s ease-out; padding-top:env(safe-area-inset-top,0px)}
 #fr-drawer.open .fr-back{opacity:1} #fr-drawer.open .fr-panel{transform:none}
 .fr-top{display:flex; align-items:center; justify-content:space-between; padding:14px 14px 6px}
 .fr-top h3{margin:0}
@@ -612,13 +612,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .fr-row.open{background:rgba(255,255,255,.04); margin:0 -8px; padding:11px 8px; border-radius:10px}
 .fr-acts .fr-x{width:auto; padding:0 10px; font-size:13px; border:1px solid var(--line)}
 .fr-note{color:var(--muted); font-size:12px; align-self:center}
-.inv-layer{position:fixed; inset:0; z-index:160; background:rgba(0,0,0,.4); display:flex; align-items:flex-start; justify-content:center; padding:90px 16px 16px}
-.inv-card{position:relative; width:min(320px,100%); background:var(--panel,#16201a); border:1px solid var(--brass); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px; box-shadow:0 14px 34px rgba(0,0,0,.6)}
-.inv-card b{font-size:15px}
-.inv-x{position:absolute; top:4px; right:6px; width:30px; height:30px; font-size:22px; color:var(--cream,#eee); background:none}
-.inv-line{display:flex; gap:8px}
-.inv-line input{flex:1; min-width:0; background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font:16px var(--body,system-ui)}
-.inv-line .btn{flex:none; min-height:38px; padding:0 14px; font-size:14px}
+.inv-layer{position:fixed; inset:0; z-index:160; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; justify-content:center; padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.inv-card{position:relative; width:min(260px,100%); background:var(--panel,#16201a); border:1px solid var(--brass); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px; box-shadow:0 14px 34px rgba(0,0,0,.6)}
+.inv-card > b{font-size:14px; padding-left:2px}
+.inv-x{position:absolute; top:2px; right:4px; width:28px; height:28px; font-size:20px; color:var(--cream,#eee); background:none}
+.inv-friends{display:flex; flex-direction:column; max-height:168px; overflow-y:auto}
+.inv-f{display:flex; align-items:center; gap:0; width:100%; padding:7px 4px; background:none; border:0; border-bottom:1px solid var(--line); color:var(--cream,#eee); font-size:14px; font-weight:600; text-align:left}
+.inv-f span{margin-left:auto; color:var(--brass); font-size:12px; font-weight:600}
+.inv-f:disabled span{color:var(--muted)}
+.inv-none{margin:2px 2px 4px; color:var(--muted); font-size:12px}
+.inv-line{display:flex; gap:6px}
+.inv-line input{flex:1; min-width:0; background:#0b0f0c; color:var(--cream,#eee); border:1px solid var(--line); border-radius:8px; padding:6px 8px; font:16px var(--body,system-ui)}
+.inv-line .btn{flex:none; min-height:34px; padding:0 10px; font-size:13px}
 .sheet-x{position:sticky; top:-6px; align-self:flex-end; margin:-10px -8px -44px 0; z-index:3; width:36px; height:36px; border-radius:9px; font-size:26px; line-height:1; color:var(--cream,#eee); background:var(--panel); border:1px solid var(--line)}
 </style>
 
@@ -2255,18 +2260,30 @@ function ghostTap(){
   if(G.spectator) return toast('You\'re already in line for the next game.','info');
   openInvite();
 }
-function openInvite(){   // a small pop-up: type a name or player ID, Invite
+function openInvite(){   // a small pop-up: online friends to tap, and a name / player ID box at the bottom
   document.querySelector('.inv-layer')?.remove();
   const layer=document.createElement('div'); layer.className='inv-layer';
-  layer.innerHTML=`<div class="inv-card" role="dialog" aria-label="Invite a friend"><button class="inv-x" aria-label="Close">×</button><b>Invite a friend</b>
-    <div class="inv-line"><input id="inv-name" type="text" maxlength="24" placeholder="Name or player ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="inv-send">Invite</button></div></div>`;
+  layer.innerHTML=`<div class="inv-card" role="dialog" aria-label="Invite a friend"><button class="inv-x" aria-label="Close">×</button><b>Invite</b>
+    <div class="inv-friends" id="inv-friends"></div>
+    <div class="inv-line"><input id="inv-name" type="text" maxlength="24" placeholder="Name or ID" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn btn-brass" id="inv-send">Invite</button></div></div>`;
   document.body.appendChild(layer);
-  const i=$('#inv-name'), close=()=>layer.remove(); setTimeout(()=>i.focus(),30);
+  const i=$('#inv-name'), close=()=>layer.remove();
   layer.onclick=e=>{ if(!e.target.closest('.inv-card')||e.target.closest('.inv-x')) close(); };
+  const ready=(typeof NET!=='undefined')&&NET.ready;
   const send=()=>{ const nm=i.value.trim(); if(!nm) return i.focus();
-    if((typeof NET==='undefined')||!NET.ready) return toast('Connect to the server to invite players.');
+    if(!ready) return toast('Connect to the server to invite players.');
     NET.send({t:'invite',q:nm}); close(); };
   $('#inv-send').onclick=send; i.onkeydown=ev=>{ if(ev.key==='Enter') send(); };
+  drawInviteFriends();
+  if(ready&&!session.guest) NET.send({t:'friends',open:false});   // fresh list of who's online
+}
+function drawInviteFriends(){
+  const box=document.getElementById('inv-friends'); if(!box) return;
+  const here=new Set(((typeof NET!=='undefined')&&NET.table?NET.table.seats:[]).map(x=>x.id));
+  const on=FRIENDS.filter(f=>f.kind==='friend'&&f.status!=='offline'&&!here.has('u:'+f.id)).sort((a,b)=>a.name.localeCompare(b.name));
+  box.innerHTML=on.length?on.map(f=>`<button class="inv-f" data-f="${f.id}"><i class="fr-dot ${f.status==='online'?'on':'game'}"></i>${esc(f.name)}<span>Invite</span></button>`).join('')
+    :'<p class="inv-none">No friends online right now.</p>';
+  box.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ NET.send({t:'invite',id:b.dataset.f}); b.disabled=true; b.querySelector('span').textContent='Sent'; });
 }
 function renderNewTable(){
   const mark=(id,v)=>$(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(v)));
@@ -2583,7 +2600,7 @@ function onServer(m){
   switch(m.t){
     case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; if(m.pid) setPlayerId(m.pid); $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
     case 'admin': renderAdmin(m); break;
-    case 'friends': FRIENDS=m.list||[]; friendsOnline(); if(document.getElementById('fr-drawer')) drawFriends(); break;
+    case 'friends': FRIENDS=m.list||[]; friendsOnline(); if(document.getElementById('fr-drawer')) drawFriends(); drawInviteFriends(); break;
     case 'friendsCount': friendsCount(m.online||0,m.requests||0); break;
     case 'invited': showInvite(m); break;
     case 'online': ['#lobby-online'].forEach(id=>{ const el=$(id); el.innerHTML=`<span class="dot-live"></span>${m.n} player${m.n===1?'':'s'} online`; el.hidden=false; }); break;
@@ -3035,7 +3052,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261108-190320) */
+/* Offline support + automatic updates (build 20261108-201850) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
