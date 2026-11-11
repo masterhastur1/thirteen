@@ -1375,10 +1375,10 @@ function startTurn(){
   render();
   if(G.table&&G.table.by!==i&&(unbeatable(G.table)||(G.hands[i].length===1&&G.table.cards.length>=2))){
     G.action[i]='think'; renderSeats();
-    G.wait=setTimeout(()=>doPass(i,true),750); return;
+    G.wait=setTimeout(()=>doPass(i,true),1000); return;
   }
   if(p.cpu){G.action[i]='think';renderSeats();G.wait=setTimeout(()=>cpuAct(i),{relaxed:4300,normal:2800,quick:1300}[settings.pace]+Math.random()*400)}
-  else if(G.autoPass&&G.table){ G.wait=setTimeout(()=>{if(G&&!G.over&&G.cur===0&&G.autoPass&&G.table) doPass(0,true)},600); render() }
+  else if(G.autoPass&&G.table){ G.wait=setTimeout(()=>{if(G&&!G.over&&G.cur===0&&G.autoPass&&G.table) doPass(0,true)},1000); render() }
   else startClock();
 }
 function advance(){G.cur=(G.cur+1)%M.n;startTurn()}
@@ -1409,10 +1409,15 @@ function doPass(i,auto){
   if(G.finalLap){G.finalLap.left--; if(G.finalLap.left<=0) return endLap(); return advance()}
   G.passes++;
   if(G.passes>=M.n-1){
-    G.table=null; G.prev=null; G.passes=0; G.cur=G.lastPlayer; G.action=G.action.map(()=>null); G.log.push({t:'round',p:G.cur}); setAutoPass(false);
-    const p=M.players[G.cur];
-    banner(`New round · ${p.cpu?p.name+' leads':'your lead'}`);
-    G.wait=setTimeout(startTurn,700); render(); return;
+    const clear=()=>{
+      G.hold=false; G.table=null; G.prev=null; G.passes=0; G.cur=G.lastPlayer; G.action=G.action.map(()=>null); G.log.push({t:'round',p:G.cur}); setAutoPass(false);
+      const p=M.players[G.cur];
+      banner(`New round · ${p.cpu?p.name+' leads':'your lead'}`);
+      G.wait=setTimeout(startTurn,700); render();
+    };
+    // nobody could beat it (the 2♠): leave it on the table for 2.7s so everyone sees it, then clear
+    if(auto&&G.table&&unbeatable(G.table)){ G.hold=true; G.cur=-1; render(); G.wait=setTimeout(()=>{ if(G&&!G.over) clear(); },2700); return; }
+    return clear();
   }
   advance();
 }
@@ -1932,6 +1937,7 @@ function renderStatus(){
   else if(G.viewer) msg=M.players.some(p=>p.ghost)?'<b>Watching.</b> Tap an open seat to be dealt in next game.':'<b>Watching.</b> This table is full right now.';
   else if(G.spectator) msg='<b>Seat reserved.</b> You\'ll be dealt in when the next game starts.';
   else if(G.lapDone) msg='<b>Final lap complete.</b> Counting the cards…';
+  else if(G.hold) msg=`Nobody can beat <b>${describe(G.table)}</b>. Clearing the table…`;
   else if(G.dealing) msg='Dealing…'+(G.commit?` <span style="color:var(--muted);font-size:12px">Deal ID ${G.commit.hash.slice(0,8)}</span>`:'');
   else if(G.openPreview) msg=`${G.cur===0?'You begin':esc(M.players[G.cur].name)+' begins'} with the <b>${cname(G.openCard)}</b>.`;
   else if(me){
@@ -3016,7 +3022,7 @@ function applyView(v){
     hands:order.map((j,k)=>k===0?hand:j>=n?[]:Array(v.seats[j].out?0:v.seats[j].oneCard?1:2).fill(null)),
     cur:v.cur<0?-1:rot(v.cur),table:pubPlay(v.table),prev:pubPlay(v.prev),opening:v.opening,openCard:G&&!fresh&&G.openCard||null,
     openPreview:v.phase==='opening',dealing:v.phase==='dealing',shown:hand.length,got:order.map(j=>j<n?13:0),
-    finalLap:v.finalLap?{}:null,lapDone:v.lapDone,over:v.phase==='over',action:order.map(j=>j<n?v.seats[j].action:null),
+    finalLap:v.finalLap?{}:null,lapDone:v.lapDone,hold:v.hold,over:v.phase==='over',action:order.map(j=>j<n?v.seats[j].action:null),
     bank:Array(total).fill(v.bank/1000),turnLeft:0,bankActive:false,log:[],clock:v.clock,leftover:0,
     paused:!!v.paused,pausedAt:v.paused?v.pausedAt:null,order,nSeats:n,dcLeft:order.map(j=>j<n?v.seats[j].dcLeft||0:0)};
   if(G.table) G.table.by=rot(G.table.by); if(G.prev) G.prev.by=rot(G.prev.by);
@@ -3032,7 +3038,7 @@ function applyView(v){
   if(fresh&&G.dealing) banner('Dealing…',1500);
   if(G.openPreview&&fresh===false&&!G._opened){ G._opened=true; }
   // auto pass: your turn comes round and you've ticked it
-  if(G.autoPass&&G.cur===0&&G.table&&!G.over&&!G.opening) setTimeout(()=>{ if(G&&G.online&&G.autoPass&&G.cur===0&&G.table) NET.send({t:'pass'}); },500);
+  if(G.autoPass&&G.cur===0&&G.table&&!G.over&&!G.opening) setTimeout(()=>{ if(G&&G.online&&G.autoPass&&G.cur===0&&G.table) NET.send({t:'pass'}); },1000);
   if(G.over&&v.result&&!spectator) recordNetGame(v);
   clearInterval(netTick); netTick=setInterval(clockTick,250);
 }
@@ -3368,7 +3374,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261110-192404) */
+/* Offline support + automatic updates (build 20261110-210304) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
