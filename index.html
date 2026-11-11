@@ -391,6 +391,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .adm-only .toggle-row small{color:rgba(239,75,75,.75)!important}
 .adm-only .seg button[aria-pressed=true]{background:var(--danger); color:#fff}
 .adm-only input[type=range]{accent-color:var(--danger)}
+.adm-only .switch[aria-checked=true]{background:var(--danger); border-color:var(--danger)}
 .t-opts{display:flex; flex-direction:column; gap:10px}
 .ladder-btn{margin-right:0}
 .pill.tour{border-color:var(--danger); color:var(--danger)}
@@ -785,6 +786,13 @@ details.ss[open] summary{margin-bottom:4px}
       <button class="switch" id="four-switch" role="switch" aria-checked="false" aria-label="Four-color deck"></button>
     </div>
     <div class="minihand" id="deck-preview"></div>
+  </div>
+  <div class="panel adm-only" id="set-admin" hidden>
+    <div class="label">Admin only</div>
+    <div class="toggle-row" style="background:none;border:0;padding:0">
+      <span>Invisible<small>You appear offline on friends lists and in the online count. Playing, creating tables and inviting all work as normal.</small></span>
+      <button class="switch" id="invis-switch" role="switch" aria-checked="false" aria-label="Invisible"></button>
+    </div>
   </div>
   <div class="panel">
     <div class="label">Data</div>
@@ -1209,6 +1217,10 @@ function saveSettings(){store.set('thirteen.settings',settings);syncSettings()}
 $('#tips-switch').onclick=()=>{settings.tips=!settings.tips;saveSettings()};
 $('#bank-switch').onclick=()=>{settings.bank=!settings.bank;saveSettings()};
 $('#four-switch').onclick=()=>{settings.four=!settings.four;saveSettings()};
+// admins only: appear offline (the server checks it's an admin, too)
+function drawInvisible(){ const on=!!store.get('thirteen.invisible',false); $('#set-admin').hidden=!(typeof NET!=='undefined'&&NET.admin); $('#invis-switch').setAttribute('aria-checked',String(on)); }
+$('#invis-switch').onclick=()=>{ const on=!store.get('thirteen.invisible',false); store.set('thirteen.invisible',on); drawInvisible();
+  if(NET.ready) NET.send({t:'invisible',on}); toast(on?'You’re invisible. You appear offline to everyone.':'You’re visible again.','info'); };
 $('#seg-pace').querySelectorAll('button').forEach(b=>b.onclick=()=>{settings.pace=b.dataset.v;saveSettings()});
 $('#seg-orient').querySelectorAll('button').forEach(b=>b.onclick=()=>{settings.orient=b.dataset.v;saveSettings();applyOrientation(true)});
 /* Rotation: the layout always follows the screen's real shape. Lock/unlock asks the device; browsers only allow it in the installed app or full screen. */
@@ -2323,7 +2335,7 @@ function renderPlayers(noPull){
 }
 renderPlayers.all=()=>{
   const list=Object.values(loadPlayers().tally).sort((a,b)=>Math.abs(b.net)-Math.abs(a.net)||b.games-a.games);
-  $('#pl-list').innerHTML=list.length?list.map(e=>`<div class="pl-row"><span class="nm"><span>${esc(e.name)}</span><small>${e.net>0?'Owes you':e.net<0?'You owe them':'All square'} · ${e.games} game${e.games===1?'':'s'}</small></span><b class="${e.net>0?'pos':e.net<0?'neg':''}">${signed(e.net)||'0'}</b></div>`).join('')
+  $('#pl-list').innerHTML=list.length?list.map(e=>`<div class="pl-row"><span class="nm"><span>vs. ${esc(e.name)}</span><small>${e.games} game${e.games===1?'':'s'}</small></span><b class="${e.net>0?'pos':e.net<0?'neg':''}">${signed(e.net)||'0'}</b></div>`).join('')
     :'<p class="st-empty">No games against other players yet. Play Endless or Target games online and your tally with each player shows up here.</p>';
   const b=$('#btn-clear-players'); b.classList.remove('armed'); b.textContent='Clear player stats'; b.disabled=!list.length&&!loadSessions().length;
 };
@@ -2846,7 +2858,7 @@ const NET={ws:null,ready:false,want:false,token:null,me:null,table:null,view:nul
     this.status('wait','Connecting…');
     let ws; try{ ws=new WebSocket(ONLINE.server); }catch(e){ return this.status('','Offline'); }
     this.ws=ws;
-    ws.onopen=()=>{ this.retry=0; ws.send(JSON.stringify({t:'hello',token:this.token||undefined,guestId:session.guest?store.get('thirteen.guestId',undefined):undefined,name:profile.name,avatar:{color:profile.color,animal:profile.animal}})); };
+    ws.onopen=()=>{ this.retry=0; ws.send(JSON.stringify({t:'hello',token:this.token||undefined,guestId:session.guest?store.get('thirteen.guestId',undefined):undefined,name:profile.name,avatar:{color:profile.color,animal:profile.animal},invisible:store.get('thirteen.invisible',false)||undefined})); };
     ws.onmessage=ev=>{ let m; try{m=JSON.parse(ev.data)}catch(e){return} onServer(m); };
     ws.onclose=()=>{ this.ready=false; this.ws=null; $('#lobby-online').hidden=true;
       if(!this.want) return this.status('','Offline');
@@ -2858,7 +2870,7 @@ const NET={ws:null,ready:false,want:false,token:null,me:null,table:null,view:nul
 
 function onServer(m){
   switch(m.t){
-    case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; if(m.pid) setPlayerId(m.pid); $('#btn-admin').hidden=!NET.admin; if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
+    case 'welcome': NET.ready=true; NET.me=m.id; NET.admin=!!m.admin; if(m.pid) setPlayerId(m.pid); $('#btn-admin').hidden=!NET.admin; drawInvisible(); if(m.guestId) store.set('thirteen.guestId',m.guestId); NET.status('on','Online'); if(NET.admin&&!$('#admin').hidden) NET.send({t:'admin',op:'open'}); break;
     case 'admin': renderAdmin(m); break;
     case 'friends': FRIENDS=m.list||[]; friendsOnline(); if(document.getElementById('fr-drawer')) drawFriends(); drawInviteFriends(); break;
     case 'friendsCount': friendsCount(m.online||0,m.requests||0); break;
@@ -3326,7 +3338,7 @@ $('#btn-google').onclick=async()=>{
 };
 $('#btn-guest').onclick=()=>{ loginErr(''); $('#login-pass').value=''; enterOnline(null,true); };
 $('#btn-offline').onclick=()=>{ loginErr(''); NET.disconnect(); startSession(false); $('#who-line').textContent='Offline · '; show('menu'); };
-$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } CLOUD.stop(); NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; account.pid=null; store.set('thirteen.profile',account); $('#lobby-online').hidden=true; show('login'); };
+$('#btn-logout').onclick=async()=>{ if(NET.table) NET.send({t:'leave'}); NET.disconnect(); if(sb&&!session.guest){ try{await sb.auth.signOut()}catch(e){} } CLOUD.stop(); NET.token=null; NET.admin=false; $('#btn-admin').hidden=true; drawInvisible(); account.pid=null; store.set('thirteen.profile',account); $('#lobby-online').hidden=true; show('login'); };
 if(sb){
   // keep the server's copy of your sign-in fresh, finish Google / email-link sign-ins, and handle password resets
   sb.auth.onAuthStateChange((event,sess)=>{
@@ -3348,7 +3360,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261109-171345) */
+/* Offline support + automatic updates (build 20261110-191559) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
