@@ -392,6 +392,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .adm-only .seg button[aria-pressed=true]{background:var(--danger); color:#fff}
 .adm-only input[type=range]{accent-color:var(--danger)}
 .adm-only .switch[aria-checked=true]{background:var(--danger); border-color:var(--danger)}
+.adm-invis{background:transparent; border:1.5px solid var(--danger); color:var(--danger); box-shadow:none; flex:0 0 auto}
+.adm-invis[aria-pressed=true]{background:var(--danger); color:#fff}
+.adm-head{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.adm-head .label{margin:0}
+#adm-tcount{color:var(--cream); margin-left:4px}
+.adm-fold{width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:#0b0f0c; color:var(--cream); display:grid; place-items:center; cursor:pointer; flex:0 0 auto}
+.adm-fold svg{transition:transform .2s}
+.adm-fold[aria-expanded=false] svg{transform:rotate(180deg)}
 .t-opts{display:flex; flex-direction:column; gap:10px}
 .ladder-btn{margin-right:0}
 .pill.tour{border-color:var(--danger); color:var(--danger)}
@@ -725,7 +733,8 @@ details.ss[open] summary{margin-bottom:4px}
     <button class="btn btn-brass" id="adm-send">Send to everyone</button>
   </div>
   <div class="panel">
-    <div class="label">All tables</div>
+    <div class="adm-head"><div class="label">All tables <span id="adm-tcount"></span></div>
+      <button class="adm-fold" id="adm-fold" aria-expanded="true" aria-controls="adm-tables" aria-label="Collapse tables"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
     <div id="adm-tables" class="adm-tables"></div>
   </div>
   <div class="panel">
@@ -747,6 +756,7 @@ details.ss[open] summary{margin-bottom:4px}
     <div class="set-row"><span>Scoring</span><div class="seg" id="adm-cpu-match"><button data-v="endless">Endless</button><button data-v="target">Target</button><button data-v="casual">Casual</button></div></div>
     <button class="btn btn-ghost" id="adm-cpu-save">Save CPU tables</button>
   </div>
+  <button class="btn adm-invis" id="invis-switch" aria-pressed="false">Invisible</button>
   <div class="panel">
     <div class="label">Banned</div>
     <div id="adm-banned"></div>
@@ -786,13 +796,6 @@ details.ss[open] summary{margin-bottom:4px}
       <button class="switch" id="four-switch" role="switch" aria-checked="false" aria-label="Four-color deck"></button>
     </div>
     <div class="minihand" id="deck-preview"></div>
-  </div>
-  <div class="panel adm-only" id="set-admin" hidden>
-    <div class="label">Admin only</div>
-    <div class="toggle-row" style="background:none;border:0;padding:0">
-      <span>Invisible<small>You appear offline on friends lists and in the online count. Playing, creating tables and inviting all work as normal.</small></span>
-      <button class="switch" id="invis-switch" role="switch" aria-checked="false" aria-label="Invisible"></button>
-    </div>
   </div>
   <div class="panel">
     <div class="label">Data</div>
@@ -1218,7 +1221,11 @@ $('#tips-switch').onclick=()=>{settings.tips=!settings.tips;saveSettings()};
 $('#bank-switch').onclick=()=>{settings.bank=!settings.bank;saveSettings()};
 $('#four-switch').onclick=()=>{settings.four=!settings.four;saveSettings()};
 // admins only: appear offline (the server checks it's an admin, too)
-function drawInvisible(){ const on=!!store.get('thirteen.invisible',false); $('#set-admin').hidden=!(typeof NET!=='undefined'&&NET.admin); $('#invis-switch').setAttribute('aria-checked',String(on)); }
+function drawInvisible(){ $('#invis-switch').setAttribute('aria-pressed',String(!!store.get('thirteen.invisible',false))); }
+// admin: fold the All tables list away (remembered)
+function drawFold(){ const open=store.get('thirteen.admTablesOpen',true); $('#adm-tables').hidden=!open; const b=$('#adm-fold'); b.setAttribute('aria-expanded',String(open)); b.setAttribute('aria-label',open?'Collapse tables':'Expand tables'); }
+$('#adm-fold').onclick=()=>{ store.set('thirteen.admTablesOpen',!store.get('thirteen.admTablesOpen',true)); drawFold(); };
+drawFold();
 $('#invis-switch').onclick=()=>{ const on=!store.get('thirteen.invisible',false); store.set('thirteen.invisible',on); drawInvisible();
   if(NET.ready) NET.send({t:'invisible',on}); toast(on?'You’re invisible. You appear offline to everyone.':'You’re visible again.','info'); };
 $('#seg-pace').querySelectorAll('button').forEach(b=>b.onclick=()=>{settings.pace=b.dataset.v;saveSettings()});
@@ -3151,6 +3158,7 @@ function renderAdmin(m){
   const state=t=>t.state==='playing'?(t.paused?'Paused':'Playing'+(t.gameStartedAt?' · game '+ago(t.gameStartedAt):'')):t.state==='summary'?'Between games':'Waiting for players';
   const hold=document.querySelector('#adm-tables .confirming');
   if(hold) return;   // don't redraw under a half-confirmed button
+  $('#adm-tcount').textContent=m.tables.length?`(${m.tables.length})`:'';
   $('#adm-tables').innerHTML=m.tables.length?m.tables.map(t=>`<div class="adm-t" data-id="${t.id}">
       <div class="adm-t-head"><b>${esc(t.name)}</b><span class="pill ${t.kind==='dedicated'?'feat':t.kind==='cpu'?'cpu':'live'}">${kind[t.kind]}</span></div>
       <small>${state(t)} · ${t.seats.length}/${t.max} seats · ${matchLabel(t.rules)} · open ${ago(t.createdAt)}</small>
@@ -3360,7 +3368,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261110-191559) */
+/* Offline support + automatic updates (build 20261110-192404) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
