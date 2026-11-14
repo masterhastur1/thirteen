@@ -403,6 +403,30 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
 .t-opts{display:flex; flex-direction:column; gap:10px}
 .ladder-btn{margin-right:0}
 .pill.tour{border-color:var(--danger); color:var(--danger)}
+#hrank{position:fixed; inset:0; z-index:75; background:rgba(5,8,6,.86); display:flex; align-items:center; justify-content:center; padding:max(14px,env(safe-area-inset-top)) 12px max(14px,env(safe-area-inset-bottom))}
+#hrank[hidden]{display:none}
+.hr-box{width:min(460px,100%); max-height:100%; display:flex; flex-direction:column; gap:8px; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.hr-head{display:flex; align-items:flex-start; gap:10px}
+.hr-head h3{font-family:var(--display); font-weight:400; font-size:24px; margin:0; line-height:1.1; flex:1}
+.hr-head small{display:block; font-family:var(--body,system-ui); font-size:13px; color:var(--muted); margin-top:4px; line-height:1.35}
+.hr-scroll{overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0}
+.hr-scroll>.label{margin:4px 0 6px}
+.hr-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-top:1px solid var(--line)}
+.hr-row.top b{color:var(--brass)}
+.hr-txt{min-width:0}
+.hr-txt b{display:block; font-size:15px}
+.hr-txt small{display:block; font-size:12px; color:var(--muted); line-height:1.3; margin-top:2px}
+.hr-cards{display:flex; flex:none}
+.hc{width:26px; height:36px; border-radius:5px; background:#f6f1e4; color:#16130f; border:1px solid rgba(0,0,0,.25); box-shadow:0 1px 2px rgba(0,0,0,.4); display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:var(--cond); font-weight:700; font-size:13px; line-height:1; letter-spacing:-.02em}
+.hc+.hc{margin-left:-7px}
+.hc i{font-style:normal; font-size:12px; margin-top:1px}
+.hc.red{color:#c8243a}
+.hr-order{border-top:1px solid var(--line); margin-top:6px; padding-top:10px; display:flex; flex-direction:column; gap:6px; font-family:var(--cond); font-size:16px; letter-spacing:.06em}
+.hr-order .label{display:inline-block; width:58px; margin:0}
+.hr-order b{color:var(--brass)} .hr-order .red{color:#e85d75}
+.hr-order small{font-family:var(--body,system-ui); font-size:12px; letter-spacing:0; color:var(--muted)}
+.hr-open{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; width:100%}
+.hr-btn{background:var(--panel); color:var(--cream)}
 #bracket{position:fixed; inset:0; z-index:70; background:rgba(5,8,6,.86); display:flex; align-items:center; justify-content:center; padding:max(14px,env(safe-area-inset-top)) 12px max(14px,env(safe-area-inset-bottom))}
 #bracket[hidden]{display:none}
 .br-box{width:min(760px,100%); max-height:100%; display:flex; flex-direction:column; gap:10px; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 20px 50px rgba(0,0,0,.6)}
@@ -501,6 +525,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   #game .score-btn .sb-ico{transform:scale(.8)}
   #game .autopass{margin-left:auto; width:68px; min-height:26px; height:26px; align-self:center; font-size:9px; padding:0 7px; gap:5px; border-radius:9px}
   #game .autopass input{width:14px; height:14px}
+  #game #btn-hands{margin-left:auto; width:30px; height:26px; min-height:26px; align-self:center; border-radius:8px}
+  #game #btn-hands svg{width:16px; height:16px}
+  #game #btn-hands:not([hidden])~.autopass{margin-left:0}
   #game #btn-leave{width:26px; height:26px; min-height:26px; align-self:center; font-size:13px; border-radius:8px}
   .score-pop{top:34px}
   #game .mybar{display:contents}
@@ -523,6 +550,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brass); outline
   /* Sort alone in the bottom-left corner; the time bank moves up beside Auto pass */
   #btn-sort{width:55px; height:52px; left:-12px; bottom:4px; padding:0 2px; border-radius:10px}
   #btn-bank{top:4px; right:86px; height:30px; width:auto; flex-direction:row; gap:7px; padding:0 11px; border-radius:9px}
+  body.chart #btn-bank{right:124px}   /* make room for the hand ranking button */
   #btn-pass,#btn-play{width:100px; right:-12px}
   #btn-play{bottom:4px} #btn-pass{bottom:66px}   /* a small gap between Pass and Play */
   #btn-sort small{font-size:9px; letter-spacing:.06em}
@@ -778,6 +806,10 @@ details.ss[open] summary{margin-bottom:4px}
       <button class="switch" id="tips-switch" role="switch" aria-checked="false" aria-label="Display tips"></button>
     </div>
     <div class="toggle-row">
+      <span>Hand ranking chart<small>Adds a button to the top bar in games that opens the hand ranking chart.</small></span>
+      <button class="switch" id="chart-switch" role="switch" aria-checked="false" aria-label="Hand ranking chart button in games"></button>
+    </div>
+    <div class="toggle-row">
       <span>Time bank starts on<small>Your setting at the start of each match. You can still tap it in game.</small></span>
       <button class="switch" id="bank-switch" role="switch" aria-checked="true" aria-label="Time bank starts on"></button>
     </div>
@@ -999,6 +1031,7 @@ details.ss[open] summary{margin-bottom:4px}
   <div class="scorebar">
     <button class="icon-btn" id="btn-leave" aria-label="Menu">≡</button>
     <button class="score-btn" id="chips" aria-expanded="false" aria-controls="score-pop"><span class="sb-ico" aria-hidden="true"></span>Scoreboard<span class="chev" aria-hidden="true">▾</span></button>
+    <button class="icon-btn hr-btn" id="btn-hands" aria-label="Hand rankings" title="Hand rankings" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="10" height="14" rx="2" transform="rotate(-10 8.5 12)"/><rect x="10.5" y="4" width="10" height="14" rx="2" transform="rotate(8 15.5 11)"/><path d="M15.4 8.6v5M13.4 10.4h4" stroke-linecap="round"/></svg></button>
     <label class="autopass" id="autopass" title="Pass automatically for the rest of this round"><input type="checkbox" id="ap-box"><span>Auto<br>pass</span></label>
   </div>
   <div class="score-pop" id="score-pop" role="dialog" aria-label="Scoreboard" hidden>
@@ -1022,6 +1055,7 @@ details.ss[open] summary{margin-bottom:4px}
   </div>
 </section>
 
+<div id="hrank" hidden role="dialog" aria-modal="true" aria-label="Hand rankings"></div>
 <div id="bracket" hidden role="dialog" aria-modal="true" aria-label="Tournament bracket"></div>
 <div id="overlay" class="overlay" hidden></div>
 <div id="toast" class="toast" hidden></div>
@@ -1153,7 +1187,7 @@ async function commitDeck(ids){
 /* ================= Persistence (per-viewer convenience) ================= */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
              set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const settings=Object.assign({tips:false,bank:true,pace:'normal',sort:'rank',four:false,orient:'auto'},store.get('thirteen.settings',{}));
+const settings=Object.assign({tips:false,chart:false,bank:true,pace:'normal',sort:'rank',four:false,orient:'auto'},store.get('thirteen.settings',{}));
 const setup=Object.assign({cpus:3,levels:[2,2,2],match:'endless',target:25,play:'live'},store.get('thirteen.setup',{}));
 
 /* ================= Helpers ================= */
@@ -1206,6 +1240,7 @@ const signed=v=>(v>0?'+':v<0?'−':'')+Math.abs(v);
 })();
 function syncSettings(){
   $('#tips-switch').setAttribute('aria-checked',settings.tips);
+  $('#chart-switch').setAttribute('aria-checked',settings.chart); $('#btn-hands').hidden=!settings.chart; document.body.classList.toggle('chart',!!settings.chart);
   $('#bank-switch').setAttribute('aria-checked',settings.bank);
   $('#four-switch').setAttribute('aria-checked',settings.four);
   document.body.classList.toggle('four',settings.four);
@@ -1218,6 +1253,8 @@ function syncSettings(){
 }
 function saveSettings(){store.set('thirteen.settings',settings);syncSettings()}
 $('#tips-switch').onclick=()=>{settings.tips=!settings.tips;saveSettings()};
+$('#chart-switch').onclick=()=>{settings.chart=!settings.chart;saveSettings()};
+$('#btn-hands').onclick=()=>openHands();
 $('#bank-switch').onclick=()=>{settings.bank=!settings.bank;saveSettings()};
 $('#four-switch').onclick=()=>{settings.four=!settings.four;saveSettings()};
 // admins only: appear offline (the server checks it's an admin, too)
@@ -2162,11 +2199,41 @@ function showRules(){
   <li><b>Pair:</b> any higher pair. A same-rank pair wins only if it holds the spade.</li>
   <li><b>Triple:</b> any higher triple.</li>
   <li><b>Five cards</b>, low to high: two pair + 1, straight, flush, full house, four of a kind + 1, straight flush.</li></ul>
+  <button class="btn btn-ghost hr-open" id="rl-hands"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="10" height="14" rx="2" transform="rotate(-10 8.5 12)"/><rect x="10.5" y="4" width="10" height="14" rx="2" transform="rotate(8 15.5 11)"/><path d="M15.4 8.6v5M13.4 10.4h4" stroke-linecap="round"/></svg>Hand ranking chart</button>
   <h4>Rounds</h4><ul><li>Every play matches the round's type and must beat, not tie.</li><li>Pass any time. When everyone passes, the last player to play leads anything.</li></ul>
   <h4>Ending</h4><ul><li>When someone goes out, everyone else gets one last turn to shed cards.</li><li>The winner scores 1 point per card left in each opponent's hand.</li><li>If the 2♠ is ever your only card, you lose and pay every opponent.</li></ul>
   </div><button class="btn btn-ghost" id="rl-close">Close</button>`);
-  $('#rl-close').onclick=closeSheet;
+  $('#rl-close').onclick=closeSheet; $('#rl-hands').onclick=()=>openHands();
 }
+/* ----- hand ranking chart (pop-out) ----- */
+function openHands(){
+  const ch=(r,su)=>`<span class="hc${su==='♥'||su==='♦'?' red':''}">${r}<i>${su}</i></span>`;
+  const row=(name,cards,note,top)=>`<div class="hr-row${top?' top':''}"><div class="hr-txt"><b>${name}</b><small>${note}</small></div><div class="hr-cards">${cards}</div></div>`;
+  const five=[
+    ['Royal flush',[['10','♠'],['J','♠'],['Q','♠'],['K','♠'],['A','♠']],'10 to A of spades. Can’t be beaten.',1],
+    ['Straight flush',[['5','♥'],['6','♥'],['7','♥'],['8','♥'],['9','♥']],'Higher suit wins, then the higher top card.'],
+    ['Four of a kind + 1',[['9','♣'],['9','♦'],['9','♥'],['9','♠'],['4','♦']],'Higher four wins.'],
+    ['Full house',[['J','♣'],['J','♦'],['J','♠'],['5','♥'],['5','♠']],'Higher three wins.'],
+    ['Flush',[['3','♦'],['4','♦'],['7','♦'],['9','♦'],['K','♦']],'Higher suit wins, then the highest card.'],
+    ['Straight',[['6','♣'],['7','♦'],['8','♠'],['9','♥'],['10','♣']],'Higher top card wins. A‑2‑3‑4‑5 is lowest, 10‑J‑Q‑K‑A highest.'],
+    ['Two pair + 1',[['7','♣'],['7','♥'],['Q','♦'],['Q','♠'],['3','♣']],'Higher top pair wins, then the lower pair.']
+  ].map(([n,c,t,top])=>row(n,c.map(x=>ch(...x)).join(''),t,top)).join('');
+  const small=[
+    ['Triple',[['8','♣'],['8','♦'],['8','♠']],'Any higher triple. Three 2s can’t be beaten.'],
+    ['Pair',[['K','♦'],['K','♠']],'Any higher pair. Same rank wins only with the spade.'],
+    ['Single',[['A','♥']],'Higher card of the same suit, or the same rank in a higher suit.']
+  ].map(([n,c,t])=>row(n,c.map(x=>ch(...x)).join(''),t)).join('');
+  const el=$('#hrank');
+  el.innerHTML=`<div class="hr-box"><div class="hr-head"><h3>Hand rankings<small>Highest first. A play must be the same type as the round and beat it.</small></h3><button class="icon-btn" id="hr-x" aria-label="Close">×</button></div>
+    <div class="hr-scroll">
+      <div class="label">Five-card hands</div>${five}
+      <div class="label" style="margin-top:12px">Triples, pairs and singles</div>${small}
+      <div class="hr-order"><div><span class="label">Ranks</span>3 4 5 6 7 8 9 10 J Q K A <b>2</b></div><div><span class="label">Suits</span>♣ <span class="red">♦ ♥</span> <b>♠</b></div><small>Both low to high.</small></div>
+    </div></div>`;
+  el.hidden=false; $('#hr-x').onclick=closeHands;
+}
+function closeHands(){ $('#hrank').hidden=true; }
+$('#hrank').onclick=e=>{ if(e.target.id==='hrank') closeHands(); };
 
 /* ================= Profile =================
    Avatar = a color plus an optional animal (no animal shows your initial). The display name starts
@@ -3374,7 +3441,7 @@ function promptNewPassword(){
 </script>
 
 <script>
-/* Offline support + automatic updates (build 20261110-210304) */
+/* Offline support + automatic updates (build 20261114-095439) */
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
   let reloaded=false;
